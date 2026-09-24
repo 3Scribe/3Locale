@@ -190,3 +190,7 @@ Prefer the simplest implementation that satisfies the current requirement while 
 Do not prematurely build Cloudflare deployment, AWS deployment, queues, object storage, multi-tenancy, billing, enterprise authentication, or other future capabilities unless the active milestone requires them.
 
 When a task reveals a reusable project rule, update this file or the relevant project document so future agents do not have to rediscover the same decision.
+
+# Import and History Consistency
+
+Import plans must remain read-only. Apply must check the analysed project version and commit localisation changes, audit events, checkpoints and retention atomically behind the repository interface. Revision history is independent of audit; individual translation saves must not create full checkpoints. Keep the newest 100 revisions per project, without edition-specific limits. Inject a portable UTC clock for meaningful lifecycle changes and preserve unchanged metadata.

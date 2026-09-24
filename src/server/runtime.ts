@@ -1,3 +1,4 @@
+import { zipArchive } from "../providers/zip";
 import { mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { ProjectService } from "../application/projects";
@@ -13,6 +14,8 @@ export function projects() {
     service = new ProjectService(
       new SqliteProjectRepository(path),
       jsonResource,
+      undefined,
+      zipArchive,
     );
   }
   return service;

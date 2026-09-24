@@ -1,15 +1,22 @@
-export interface Project {
+export interface Lifecycle {
+  createdAt: string;
+  updatedAt: string;
+}
+export interface Project extends Lifecycle {
   id: string;
   name: string;
   baseLanguage: string;
   languages: string[];
+  languageMetadata: Record<string, Lifecycle>;
+  version: number;
 }
-export interface Translation {
+export interface Translation extends Lifecycle {
+  origin: string | null;
   language: string;
   value: string;
   needsReview: boolean;
 }
-export interface Entry {
+export interface Entry extends Lifecycle {
   id: number;
   path: string[];
   translations: Translation[];
@@ -26,19 +33,56 @@ export interface ResourceFormat {
   serialize(entries: ResourceEntry[]): string;
   validateTranslation(base: string, translation: string): boolean;
 }
+export interface AuditRecord {
+  kind: string;
+  language?: string;
+  path?: string[];
+  previous?: unknown;
+  next?: unknown;
+  summary?: Record<string, number>;
+  policy?: string;
+  revisionId?: number;
+  files?: { name: string; language: string }[];
+}
+export interface AuditEvent extends AuditRecord {
+  id: number;
+  projectId: string;
+  operationId: string;
+  occurredAt: string;
+}
+export interface Revision {
+  id: number;
+  projectId: string;
+  createdAt: string;
+  kind: string;
+}
+export interface Checkpoint {
+  kind: string;
+  state: ProjectDetail;
+  createdAt: string;
+}
+export interface ProjectCommit {
+  project: ProjectDetail;
+  expectedVersion: number | null;
+  occurredAt: string;
+  events: AuditRecord[];
+  checkpoints: Checkpoint[];
+  revisionLimit: number;
+}
 export interface ProjectRepository {
   list(): Promise<Project[]>;
-  create(project: Project): Promise<void>;
   get(id: string): Promise<ProjectDetail | undefined>;
-  addLanguage(id: string, language: string): Promise<void>;
-  import(id: string, entries: ResourceEntry[]): Promise<void>;
-  saveTranslation(
-    id: string,
-    entryId: number,
-    language: string,
-    value: string,
-  ): Promise<boolean>;
+  commit(change: ProjectCommit): Promise<void>;
+  audit(id: string, before?: number): Promise<AuditEvent[]>;
+  revisions(id: string): Promise<Revision[]>;
+  revision(id: string, revisionId: number): Promise<ProjectDetail | undefined>;
 }
+export interface ArchiveProvider {
+  pack(
+    files: { name: string; text: string }[],
+  ): Promise<Uint8Array<ArrayBuffer>>;
+}
+export const revisionLimit = 100;
 export class AppError extends Error {
   constructor(
     public code: string,
@@ -53,6 +97,9 @@ export function translationFor(entry: Entry, language: string): Translation {
       language,
       value: "",
       needsReview: false,
+      createdAt: "",
+      updatedAt: "",
+      origin: null,
     }
   );
 }

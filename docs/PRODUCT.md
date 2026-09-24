@@ -852,3 +852,21 @@ The broader open-source/cloud experiment is successful if:
 * the same core application can support both deployment models;
 * development remains manageable for a very small team;
 * the project provides a useful environment for developing and evaluating agentic software-development workflows.
+
+## Milestone 3: locale import, history and export
+
+A project can be created from multiple existing JSON locale files without manually adding its languages first. Each file requires explicit confirmation of a canonical language tag; filename detection supplies only a suggestion. New projects require a file for the chosen Base Language and at least one target language. Existing projects may import base and/or target files and add languages in the same operation. Batches are limited to 20 files and 10 MB total, in addition to the existing per-file resource limits.
+
+Analysis does not mutate the project. It reports mapped/added languages, new/unchanged/changed Base Language entries, added/unchanged translations, conflicting values, review changes, invalid resources and orphan target paths. Existing and incoming Base Language entries are authoritative. Target-only paths are reported and skipped; retained base entries absent from an import remain available. Structural paths distinguish literal dotted keys from nesting.
+
+Before applying, the user explicitly chooses either to keep existing nonempty conflicting translations or use the imported values. Identical values remain unchanged; empty existing translations may be populated; blank incoming target values never erase existing text. A changed Base Language value marks existing nonempty translations for review independently. Replacing a translation through import does not clear that review flag; saving it confirms review. Validation failure or persistence failure leaves all project data and history unchanged. A stale preview must be analysed again.
+
+Audit history records structured, durable project events and import summaries, displayed newest first in English or Arabic. Projects, languages, resource entries and translations carry ISO UTC creation/update timestamps. Persisted translation origins distinguish manual edits from imports and permit future origins. Historical timestamps reflect migration time when the original time is unknown; historical audit events are not fabricated.
+
+Revision history is separate from audit history. Imports create before/after full localisation checkpoints (only after for a new project). Manual translation saves create audit events but no revisions. The newest 100 revisions are retained per project for all editions. Confirmed restoration atomically replaces localisation state, preserves audit history, records a restore event, and creates before/after restoration checkpoints. The pre-restore checkpoint provides recovery until pruned under the same retention rule. Unsaved browser edits are discarded when the imported/restored project is loaded.
+
+Batch export creates a ZIP with one canonical-language JSON filename per target, excluding the Base Language. Every target must be complete, reviewed and placeholder-valid; otherwise the entire export fails. Single-language export remains available. Per-string conflict resolution, advanced audit filtering, additional formats, authentication and automatic translation remain outside this milestone.
+
+## Community licence
+
+3Locale Community is licensed under the GNU Affero General Public License v3.0 only (`AGPL-3.0-only`); see [LICENSE](../LICENSE). Previously published MIT-licensed versions retain their original licence. Future repository versions covered by this change use `AGPL-3.0-only`.

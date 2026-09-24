@@ -50,7 +50,7 @@ describe("project languages", () => {
     repository.close();
     repository = new SqliteProjectRepository(join(folder, "test.db"));
     service = new ProjectService(repository, jsonResource);
-    expect((await service.list())[0]).toEqual({
+    expect((await service.list())[0]).toMatchObject({
       id: project.id,
       name: project.name,
       baseLanguage: "en",
@@ -103,13 +103,13 @@ describe("project languages", () => {
     const detail = await service.get(project.id);
     expect(detail.entries).toHaveLength(2);
     const entry = detail.entries.find((entry) => entry.id === hello)!;
-    expect(translationFor(entry, "en")).toEqual({
+    expect(translationFor(entry, "en")).toMatchObject({
       language: "en",
       value: "Hello again",
       needsReview: false,
     });
     for (const language of ["fr", "de"])
-      expect(translationFor(entry, language)).toEqual({
+      expect(translationFor(entry, language)).toMatchObject({
         language,
         value: `${language} hello`,
         needsReview: true,
@@ -305,12 +305,11 @@ it("waits for deferred persistence before returning results", async () => {
   const deferred: ProjectRepository = {
     list: () => later(() => repository.list()),
     get: (id) => later(() => repository.get(id)),
-    create: (value) => later(() => repository.create(value)),
-    addLanguage: (id, language) =>
-      later(() => repository.addLanguage(id, language)),
-    import: (id, entries) => later(() => repository.import(id, entries)),
-    saveTranslation: (id, entryId, language, value) =>
-      later(() => repository.saveTranslation(id, entryId, language, value)),
+    commit: (change) => later(() => repository.commit(change)),
+    audit: (id, before) => later(() => repository.audit(id, before)),
+    revisions: (id) => later(() => repository.revisions(id)),
+    revision: (id, revisionId) =>
+      later(() => repository.revision(id, revisionId)),
   };
   const asyncService = new ProjectService(deferred, jsonResource);
   const created = await asyncService.create({ ...project, id: "deferred" });
@@ -334,7 +333,13 @@ it("waits for deferred persistence before returning results", async () => {
         "Bonjour",
       )
     ).entries[0].translations,
-  ).toContainEqual({ language: "fr", value: "Bonjour", needsReview: false });
+  ).toContainEqual(
+    expect.objectContaining({
+      language: "fr",
+      value: "Bonjour",
+      needsReview: false,
+    }),
+  );
   expect(JSON.parse(await asyncService.export(created.id, "fr"))).toEqual({
     a: { hello: "Bonjour" },
   });
