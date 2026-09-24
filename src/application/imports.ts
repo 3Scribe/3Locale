@@ -273,6 +273,5 @@ export function analyseImport(
         now,
       );
     }
-  summary.invalidResources = preview.issues.length;
   return { preview, next };
 }

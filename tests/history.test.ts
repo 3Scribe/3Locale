@@ -249,7 +249,7 @@ it("marks existing translations independently when the base changes and retains 
     }),
   );
 });
-it.each(["malformed", "path", "placeholder"])(
+it.each(["malformed", "invalidResource", "path", "placeholder"])(
   "rejects an entire invalid batch (%s) without language, audit or revision changes",
   async (kind) => {
     await apply([
@@ -262,13 +262,25 @@ it.each(["malformed", "path", "placeholder"])(
     const broken =
       kind === "malformed"
         ? { ...file("de", {}), text: "{" }
-        : kind === "path"
-          ? file("en", { a: { nested: "Conflict" } })
-          : file("de", { a: "Missing token" });
+        : kind === "invalidResource"
+          ? file("de", { a: 42 })
+          : kind === "path"
+            ? file("en", { a: { nested: "Conflict" } })
+            : file("de", { a: "Missing token" });
     const files = [file("ar", { a: "مرحبا {name}" }), broken];
-    expect(
-      (await service.previewImport(input.id, files)).issues.length,
-    ).toBeGreaterThan(0);
+    const preview = await service.previewImport(input.id, files);
+    const resourceFailed = kind === "malformed" || kind === "invalidResource";
+    expect(preview.summary.invalidResources).toBe(resourceFailed ? 1 : 0);
+    expect(preview.issues).toContainEqual(
+      expect.objectContaining({
+        file: broken.name,
+        code: resourceFailed
+          ? "invalidResource"
+          : kind === "path"
+            ? "pathConflict"
+            : "placeholders",
+      }),
+    );
     await expect(apply(files)).rejects.toThrow();
     expect(await service.get(input.id)).toEqual(before);
     expect(await service.audit(input.id)).toEqual(audit);
