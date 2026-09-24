@@ -1,7 +1,14 @@
 import { useEffect, useState, type SubmitEvent } from "react";
 import { I18nextProvider, useTranslation } from "react-i18next";
 import { createI18n } from "../i18n";
-import type { Entry, Project, ProjectDetail } from "../domain/model";
+import {
+  translationFor,
+  isReady,
+  languageProgress,
+  type Entry,
+  type Project,
+  type ProjectDetail,
+} from "../domain/model";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
@@ -21,7 +28,6 @@ async function request<T>(url: string, body?: unknown): Promise<T> {
   if (!response.ok) throw new Error(result.error ?? "unexpected");
   return result as T;
 }
-
 export default function App({ language }: { language: string }) {
   const [i18n] = useState(() => createI18n(language));
   return (
@@ -34,15 +40,22 @@ function Workspace() {
   const { t, i18n } = useTranslation();
   const [projects, setProjects] = useState<Project[]>([]);
   const [project, setProject] = useState<ProjectDetail>();
+  const [selectedLanguage, setSelectedLanguage] = useState("");
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [missingOnly, setMissingOnly] = useState(false);
   const [file, setFile] = useState<File>();
-  const report = (error: unknown) => {
-    const code = error instanceof Error ? error.message : "unexpected";
-    setError(i18n.exists(`errors.${code}`) ? code : "unexpected");
-  };
+  function open(project: ProjectDetail) {
+    setProject(project);
+    setSelectedLanguage(
+      project.languages.find((language) => language !== project.baseLanguage)!,
+    );
+    setDrafts({});
+    setMissingOnly(false);
+    setFile(undefined);
+  }
   useEffect(() => {
     let active = true;
     request<Project[]>("/api/projects")
@@ -69,7 +82,8 @@ function Workspace() {
     try {
       await action();
     } catch (error) {
-      report(error);
+      const code = error instanceof Error ? error.message : "unexpected";
+      setError(i18n.exists(`errors.${code}`) ? code : "unexpected");
     } finally {
       setBusy(false);
     }
@@ -78,19 +92,22 @@ function Workspace() {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     void run(async () => {
-      const created = await request<ProjectDetail>(
-        "/api/projects",
-        Object.fromEntries(data),
-      );
+      const created = await request<ProjectDetail>("/api/projects", {
+        name: data.get("name"),
+        baseLanguage: data.get("baseLanguage"),
+        targetLanguages: String(data.get("targetLanguages"))
+          .split(",")
+          .map((value) => value.trim()),
+      });
       setProjects((previous) => [created, ...previous]);
-      setProject(created);
+      open(created);
       setNotice("created");
     });
   }
-  const ready =
-    project?.entries.filter(
-      (entry) => entry.translation.trim() && !entry.needsReview,
-    ).length ?? 0;
+  const targets =
+    project?.languages.filter(
+      (language) => language !== project.baseLanguage,
+    ) ?? [];
   return (
     <main className="mx-auto max-w-6xl px-5 py-8 sm:px-10">
       <header className="mb-12 flex flex-wrap items-center justify-between gap-4 border-b border-input pb-6">
@@ -147,9 +164,9 @@ function Workspace() {
                     />
                   </label>
                   <label className="block space-y-2">
-                    <span>{t("sourceLanguage")}</span>
+                    <span>{t("baseLanguage")}</span>
                     <Input
-                      name="sourceLanguage"
+                      name="baseLanguage"
                       required
                       defaultValue="en"
                       maxLength={35}
@@ -158,11 +175,11 @@ function Workspace() {
                     />
                   </label>
                   <label className="block space-y-2">
-                    <span>{t("targetLanguage")}</span>
+                    <span>{t("targetLanguages")}</span>
                     <Input
-                      name="targetLanguage"
+                      name="targetLanguages"
                       required
-                      maxLength={35}
+                      maxLength={3600}
                       aria-describedby="language-hint"
                       dir="ltr"
                     />
@@ -193,23 +210,27 @@ function Workspace() {
                       disabled={busy}
                       aria-label={t("openProject", { name: item.name })}
                       onClick={() =>
-                        void run(async () => {
-                          setProject(
+                        void run(async () =>
+                          open(
                             await request<ProjectDetail>(
                               `/api/projects/${item.id}`,
                             ),
-                          );
-                          setFile(undefined);
-                          setMissingOnly(false);
-                        })
+                          ),
+                        )
                       }
                     >
                       <span className="font-semibold" dir="auto">
                         {item.name}
                       </span>
                       <span className="text-muted-foreground">
-                        <bdi>{item.sourceLanguage}</bdi> /{" "}
-                        <bdi>{item.targetLanguage}</bdi>
+                        <bdi>{item.baseLanguage}</bdi> /{" "}
+                        <bdi>
+                          {item.languages
+                            .filter(
+                              (language) => language !== item.baseLanguage,
+                            )
+                            .join(", ")}
+                        </bdi>
                       </span>
                     </Button>
                   </li>
@@ -228,7 +249,7 @@ function Workspace() {
               setProject(undefined);
               setFile(undefined);
               setNotice("");
-              setMissingOnly(false);
+              setDrafts({});
             }}
           >
             {t("back")}
@@ -239,8 +260,7 @@ function Workspace() {
                 {project.name}
               </h1>
               <p className="mt-3 text-muted-foreground">
-                {t("sourceLanguage")}: <bdi>{project.sourceLanguage}</bdi> ·{" "}
-                {t("targetLanguage")}: <bdi>{project.targetLanguage}</bdi>
+                {t("baseLanguage")}: <bdi>{project.baseLanguage}</bdi>
               </p>
             </div>
             <Button
@@ -248,7 +268,7 @@ function Workspace() {
               onClick={() =>
                 void run(async () => {
                   const response = await fetch(
-                    `/api/projects/${project.id}?export=true`,
+                    `/api/projects/${project.id}?export=true&language=${encodeURIComponent(selectedLanguage)}`,
                   );
                   if (!response.ok) {
                     const result = await response.json();
@@ -257,7 +277,7 @@ function Workspace() {
                   const url = URL.createObjectURL(await response.blob());
                   const link = document.createElement("a");
                   link.href = url;
-                  link.download = `${project.targetLanguage}.json`;
+                  link.download = `${selectedLanguage}.json`;
                   link.click();
                   setTimeout(() => URL.revokeObjectURL(url), 1000);
                   setNotice("exported");
@@ -267,6 +287,73 @@ function Workspace() {
               {t("export")}
             </Button>
           </div>
+          <section className="my-6 space-y-4 rounded-xl border border-input bg-white p-5">
+            <h2 className="text-lg font-semibold">{t("languages")}</h2>
+            <ul className="space-y-2">
+              {targets.map((language) => (
+                <li key={language} dir="auto">
+                  {t("languageProgress", {
+                    language,
+                    ...languageProgress(project, language),
+                  })}
+                </li>
+              ))}
+            </ul>
+            <label className="flex flex-wrap items-center gap-3">
+              {t("editingLanguage")}
+              <select
+                disabled={busy}
+                value={selectedLanguage}
+                onChange={(event) => {
+                  setSelectedLanguage(event.target.value);
+                  setNotice("");
+                  setError("");
+                }}
+              >
+                {targets.map((language) => (
+                  <option key={language} value={language}>
+                    {language}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <form
+              className="flex flex-wrap items-end gap-3"
+              onSubmit={(event) => {
+                event.preventDefault();
+                const form = event.currentTarget;
+                const language = String(new FormData(form).get("language"));
+                void run(async () => {
+                  const updated = await request<ProjectDetail>(
+                    `/api/projects/${project.id}`,
+                    { action: "addLanguage", language },
+                  );
+                  setProject(updated);
+                  setProjects((previous) =>
+                    previous.map((item) =>
+                      item.id === updated.id ? updated : item,
+                    ),
+                  );
+                  setNotice("languageAdded");
+                  form.reset();
+                });
+              }}
+            >
+              <label className="space-y-2">
+                <span className="block">{t("newLanguage")}</span>
+                <Input
+                  name="language"
+                  required
+                  maxLength={35}
+                  dir="ltr"
+                  disabled={busy}
+                />
+              </label>
+              <Button variant="secondary" type="submit" disabled={busy}>
+                {t("addLanguage")}
+              </Button>
+            </form>
+          </section>
           <section className="my-8 rounded-xl border border-input bg-white p-5">
             <form
               className="flex flex-wrap items-end gap-4"
@@ -308,12 +395,7 @@ function Workspace() {
             </p>
           </section>
           <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-            <p>
-              {t("progress", {
-                translated: ready,
-                total: project.entries.length,
-              })}
-            </p>
+            <p>{t("progress", languageProgress(project, selectedLanguage))}</p>
             <label className="flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
@@ -333,29 +415,51 @@ function Workspace() {
               .filter(
                 (entry) =>
                   !missingOnly ||
-                  !entry.translation.trim() ||
-                  entry.needsReview,
+                  !isReady(translationFor(entry, selectedLanguage)),
               )
-              .map((entry) => (
-                <Editor
-                  key={entry.key}
-                  entry={entry}
-                  sourceLanguage={project.sourceLanguage}
-                  targetLanguage={project.targetLanguage}
-                  busy={busy}
-                  onSave={(value) =>
-                    run(async () => {
-                      setProject(
-                        await request<ProjectDetail>(
-                          `/api/projects/${project.id}`,
-                          { action: "translate", key: entry.key, value },
-                        ),
-                      );
-                      setNotice("saved");
-                    })
-                  }
-                />
-              ))}
+              .map((entry) => {
+                const draftKey = `${selectedLanguage}:${entry.id}`;
+                return (
+                  <Editor
+                    key={draftKey}
+                    entry={entry}
+                    baseLanguage={project.baseLanguage}
+                    targetLanguage={selectedLanguage}
+                    value={
+                      drafts[draftKey] ??
+                      translationFor(entry, selectedLanguage).value
+                    }
+                    onChange={(value) =>
+                      setDrafts((previous) => ({
+                        ...previous,
+                        [draftKey]: value,
+                      }))
+                    }
+                    busy={busy}
+                    onSave={(value) =>
+                      run(async () => {
+                        setProject(
+                          await request<ProjectDetail>(
+                            `/api/projects/${project.id}`,
+                            {
+                              action: "translate",
+                              entryId: entry.id,
+                              language: selectedLanguage,
+                              value,
+                            },
+                          ),
+                        );
+                        setDrafts((previous) => {
+                          const updated = { ...previous };
+                          delete updated[draftKey];
+                          return updated;
+                        });
+                        setNotice("saved");
+                      })
+                    }
+                  />
+                );
+              })}
           </div>
         </>
       )}
@@ -364,19 +468,24 @@ function Workspace() {
 }
 function Editor({
   entry,
-  sourceLanguage,
+  baseLanguage,
   targetLanguage,
+  value,
+  onChange,
   busy,
   onSave,
 }: {
   entry: Entry;
-  sourceLanguage: string;
+  baseLanguage: string;
   targetLanguage: string;
+  value: string;
+  onChange: (value: string) => void;
   busy: boolean;
   onSave: (value: string) => Promise<void>;
 }) {
   const { t } = useTranslation();
-  const [value, setValue] = useState(entry.translation);
+  const translation = translationFor(entry, targetLanguage);
+  const path = entry.path.map((segment) => JSON.stringify(segment)).join(" › ");
   return (
     <form
       className="rounded-xl border border-input bg-white p-5"
@@ -386,36 +495,36 @@ function Editor({
       }}
     >
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-mono text-sm" dir="auto">
-          {entry.key}
+        <h2 className="break-all font-mono text-sm" dir="auto">
+          {path}
         </h2>
         <span className="text-sm text-muted-foreground">
           {t(
-            entry.needsReview
+            translation.needsReview
               ? "review"
-              : entry.translation.trim()
+              : translation.value.trim()
                 ? "translated"
                 : "untranslated",
           )}
         </span>
       </div>
       <div className="grid gap-5 md:grid-cols-2">
-        <div>
-          <p className="mb-2 text-sm font-medium">{t("source")}</p>
+        <div className="min-w-0">
+          <p className="mb-2 text-sm font-medium">{t("baseText")}</p>
           <p
             className="whitespace-pre-wrap break-words rounded-md bg-background p-3"
-            lang={sourceLanguage}
+            lang={baseLanguage}
             dir="auto"
           >
-            {entry.source}
+            {translationFor(entry, baseLanguage).value}
           </p>
         </div>
-        <label className="space-y-2">
+        <label className="min-w-0 space-y-2">
           <span className="text-sm font-medium">{t("translation")}</span>
           <Textarea
-            aria-label={t("translationFor", { key: entry.key })}
+            aria-label={t("translationFor", { key: path })}
             value={value}
-            onChange={(event) => setValue(event.target.value)}
+            onChange={(event) => onChange(event.target.value)}
             maxLength={20000}
             disabled={busy}
             lang={targetLanguage}
@@ -428,7 +537,7 @@ function Editor({
           type="submit"
           variant="outline"
           disabled={busy}
-          aria-label={t("saveFor", { key: entry.key })}
+          aria-label={t("saveFor", { key: path })}
         >
           {t("save")}
         </Button>
