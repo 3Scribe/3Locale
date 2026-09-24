@@ -16,19 +16,21 @@ export const language = z
 export const projectInput = z
   .object({
     name: z.string().trim().min(1).max(120),
-    sourceLanguage: language,
-    targetLanguage: language,
+    baseLanguage: language,
+    targetLanguages: z.array(language).min(1).max(99),
   })
   .strict();
 export const projectId = z.uuid();
 export const actionInput = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("addLanguage"), language }).strict(),
   z
     .object({ action: z.literal("import"), text: z.string().max(1_000_000) })
     .strict(),
   z
     .object({
       action: z.literal("translate"),
-      key: z.string().min(1).max(500),
+      entryId: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
+      language,
       value: z.string().max(20000),
     })
     .strict(),

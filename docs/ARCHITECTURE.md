@@ -179,12 +179,22 @@ Initial concepts are expected to include:
 * Project
 * Language
 * Translation key
-* Source string
+* Base Language value
 * Translation
 * Resource file
 * Import/export format
 
 The domain model should remain independent of hosting and database technologies.
+
+### Milestone 2 localisation model
+
+A project has a `baseLanguage` designation and project-language records. Resource entries carry an identity and a structural path (`string[]`); translations belong to an entry and project language and carry their own value and `needsReview` flag. Base Language values use the same per-language representation as target values, allowing a future Base Language switch without moving text between columns. Switching and language deletion are not implemented.
+
+The SQLite adapter stores paths as JSON arrays with uniqueness per project. It enforces entry/language ownership with composite foreign keys and requires the designated Base Language to belong to the project. Repository and service operations remain asynchronous. Imports check the union of retained and incoming paths and update entries, Base Language values, and affected review flags in one transaction.
+
+Forward migration 2 preserves the released version-1 schema migration, copies each old flat key to a single-segment path, creates records for the original base and target languages, and copies all values and target review flags. Startup uses the existing versioned migration runner; a failed migration rolls back and leaves the prior schema usable.
+
+The JSON provider parses nested objects into structural paths and reconstructs the hierarchy on export. Literal dots and prototype property names remain ordinary segments. Safety limits are 1 MB UTF-8, 5,000 string leaves, 32 path segments, 500 characters per segment, and 20,000 characters per value. Empty objects, arrays, other non-string leaves, comments, trailing commas, and duplicate keys at any level are rejected. The project limit is 100 languages. Retained string/object prefix conflicts reject the entire import. Property order/whitespace and ICU/plural semantics are not round-tripped; supported placeholders remain protected per language.
 
 ### Persistence Layer
 
@@ -499,7 +509,7 @@ The initial architecture should support a first complete localisation workflow:
 
 1. Run 3Locale locally.
 2. Create a localisation project.
-3. Define a source language.
+3. Define a Base Language.
 4. Add a target language.
 5. Import a supported resource file.
 6. Display its translation keys and source values.

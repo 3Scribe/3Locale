@@ -1,11 +1,15 @@
 import type { DatabaseSync } from "node:sqlite";
 import { initialSchema } from "./migrations/001-initial-schema";
+import { projectLanguages } from "./migrations/002-project-languages";
 
 export interface Migration {
   readonly version: number;
   readonly sql: string;
 }
-export const migrations: readonly Migration[] = [initialSchema];
+export const migrations: readonly Migration[] = [
+  initialSchema,
+  projectLanguages,
+];
 
 export function migrate(
   db: DatabaseSync,

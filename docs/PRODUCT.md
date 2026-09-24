@@ -123,14 +123,14 @@ A localisation project represents an application, website, library, or other sof
 A project contains:
 
 * a name;
-* a source language;
+* a Base Language;
 * one or more target languages;
 * translation keys;
 * translations;
 * localisation resource files;
 * project settings.
 
-## Source Language
+## Base Language
 
 The canonical language in which application strings are authored.
 
@@ -140,7 +140,7 @@ For example:
 English (en)
 ```
 
-Each translation key has a source value in the project's source language.
+All languages belong to the project, with one designated as the Base Language. Each entry has a value per language; the Base Language value is the reference for translation and placeholder validation. Changing the Base Language is not yet exposed.
 
 ## Target Language
 
@@ -225,7 +225,7 @@ Examples may include:
 The fundamental 3Locale workflow is:
 
 1. User creates a project.
-2. User selects the project's source language.
+2. User selects the project's Base Language.
 3. User adds one or more target languages.
 4. User imports a source localisation resource file.
 5. 3Locale extracts translation keys and source strings.
@@ -258,7 +258,7 @@ Example:
 ```text
 3Scribe Web App
 
-Source language: English
+Base Language: English
 Keys: 1,842
 
 French       96%
@@ -565,7 +565,7 @@ This serves several purposes:
 
 The application should eventually be available in multiple languages.
 
-English may be the initial source language.
+English may be the initial Base Language.
 
 ---
 
@@ -773,7 +773,7 @@ The user must be able to:
 1. Start 3Locale locally.
 2. Create a project.
 3. Give the project a name.
-4. Select a source language.
+4. Select a Base Language.
 5. Add one target language.
 6. Import a supported source resource file.
 7. View the imported keys and source strings.
@@ -798,23 +798,15 @@ The purpose of the milestone is to prove that the core localisation model and us
 
 ---
 
-# Suggested Second Milestone
+# Milestone 2: Project Languages and Nested JSON
 
-Once the initial localisation workflow is working reliably, the next milestone may introduce local user authentication and project ownership.
+Projects support a Base Language and one or more target languages, selected during creation. More target languages can be added later. Users choose the editing/export language and see independent progress, unfinished filters, translations, and review status for each language. Changes to a Base Language value preserve existing translations and flag non-empty translations of that entry for review; saving one language does not clear another language's review flag.
 
-Potential scope:
+Flat and nested JSON resources are supported. Paths preserve their individual segments, so a literal `account.name` key cannot collide with `account` containing `name`. Exports rebuild the hierarchy using the selected language's translations and retain the existing completeness and placeholder rules. Imports keep absent entries and reject conflicting string/object paths without modifying data.
 
-* user registration;
-* sign-in;
-* sign-out;
-* password hashing;
-* authenticated sessions;
-* project ownership;
-* protected application routes;
-* duplicate email validation;
-* authentication tests.
+Limits: 1 MB UTF-8 per import, 5,000 string leaves per file, 32 path segments, 500 characters per segment, 20,000 characters per value, and 100 project languages including the Base Language. Arrays, non-string leaves, empty objects, duplicate keys, comments, and trailing commas are unsupported. JSON ordering and formatting are not preserved. ICU/plural semantics are not interpreted. Simple `{name}` and `{{name}}` placeholders are protected.
 
-The exact milestone sequence may change as development progresses.
+Existing Milestone 1 projects, languages, flat keys, values, translations, and review state migrate without loss. Authentication, Base Language switching, destructive language deletion, and additional resource formats are outside this milestone.
 
 ---
 

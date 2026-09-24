@@ -2,7 +2,7 @@ import { mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { ProjectService } from "../application/projects";
 import { SqliteProjectRepository } from "../persistence/sqlite";
-import { flatJson } from "../providers/flat-json";
+import { jsonResource } from "../providers/json";
 let service: ProjectService | undefined;
 export function projects() {
   if (!service) {
@@ -10,7 +10,10 @@ export function projects() {
       process.env.THREELOCALE_DATABASE_PATH ?? "data/three-locale.db",
     );
     mkdirSync(dirname(path), { recursive: true });
-    service = new ProjectService(new SqliteProjectRepository(path), flatJson);
+    service = new ProjectService(
+      new SqliteProjectRepository(path),
+      jsonResource,
+    );
   }
   return service;
 }
