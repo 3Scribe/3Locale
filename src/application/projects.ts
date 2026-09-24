@@ -10,36 +10,38 @@ export class ProjectService {
     private repository: ProjectRepository,
     private format: ResourceFormat,
   ) {}
-  list() {
+  async list() {
     return this.repository.list();
   }
-  create(project: Project) {
+  async create(project: Project) {
     if (project.sourceLanguage === project.targetLanguage)
       throw new AppError("sameLanguage");
-    this.repository.create(project);
+    await this.repository.create(project);
     return this.get(project.id);
   }
-  get(id: string) {
-    const project = this.repository.get(id);
+  async get(id: string) {
+    const project = await this.repository.get(id);
     if (!project) throw new AppError("notFound", 404);
     return project;
   }
-  import(id: string, text: string) {
-    this.get(id);
-    this.repository.import(id, this.format.parse(text));
+  async import(id: string, text: string) {
+    await this.get(id);
+    await this.repository.import(id, this.format.parse(text));
     return this.get(id);
   }
-  translate(id: string, key: string, value: string) {
-    const entry = this.get(id).entries.find((entry) => entry.key === key);
+  async translate(id: string, key: string, value: string) {
+    const entry = (await this.get(id)).entries.find(
+      (entry) => entry.key === key,
+    );
     if (!entry) throw new AppError("notFound", 404);
     if (value.trim() && !this.format.validateTranslation(entry.source, value))
       throw new AppError("placeholders");
-    if (!this.repository.saveTranslation(id, key, value))
+    if (!(await this.repository.saveTranslation(id, key, value)))
       throw new AppError("notFound", 404);
     return this.get(id);
   }
-  export(id: string) {
-    const project = this.get(id);
+  async export(id: string) {
+    const project = await this.get(id);
     if (
       !project.entries.length ||
       project.entries.some(

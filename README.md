@@ -35,6 +35,7 @@ Set `HOST=127.0.0.1` and `PORT=4321` in your shell for a loopback-only productio
 
 ```sh
 npm run format
+npm run format:check
 npm run lint
 npm run typecheck
 npm test
@@ -62,6 +63,8 @@ The format treats values as opaque text except for simple brace placeholders. It
 
 `src/domain` defines portable models and ports; `src/application` coordinates use cases; `src/persistence` contains the SQLite adapter and versioned migration; `src/providers` contains the flat JSON format; `src/server` composes the runtime and HTTP validation; `src/pages/api` contains thin routes. React components use i18next resources under `src/i18n` and shadcn/ui controls.
 
-The initial adapter uses Node's built-in `node:sqlite` (which may print an experimental warning on Node 24). Only the adapter imports SQLite. Zod validates HTTP input; jsonc-parser detects duplicate properties before mapping into the format-neutral model. These supporting libraries avoid hand-written input parsers. Future schema changes must add forward migrations rather than editing the initial migration.
+The initial adapter uses Node's built-in `node:sqlite` (which may print an experimental warning on Node 24). Only the adapter imports SQLite. Zod validates HTTP input; jsonc-parser detects duplicate properties before mapping into the format-neutral model. These supporting libraries avoid hand-written input parsers. Repository operations and application services return promises; the SQLite adapter retains synchronous SQLite execution internally. Future async adapters can implement the same repository contract. Schema startup runs the ordered migrations in `src/persistence/migrations.ts` transactionally, recording the version with SQLite `user_version`. Existing version-1 databases are preserved. Add consecutive forward migrations rather than editing released migrations; failures roll back pending changes and newer schemas are rejected.
 
 See [product](docs/PRODUCT.md), [architecture](docs/ARCHITECTURE.md), [technology](docs/TECHNOLOGY.md), and [agent guidance](AGENTS.md).
+
+GitHub Actions runs `format:check`, lint, typecheck, Vitest, build, and Chromium Playwright tests on pull requests to `main` and pushes to `main`, using Node 24. `format:check` reports formatting differences without modifying files.

@@ -4,9 +4,9 @@ This file provides guidance to agentic coding tools working in the 3Locale repos
 
 Read the project documentation, contained in the docs folder, before making substantive changes:
 
-- `PRODUCT.md` describes what 3Locale does and the intended user experience.
-- `ARCHITECTURE.md` describes how the application is structured and the boundaries between layers.
-- `TECHNOLOGY.md` lists the approved technology stack.
+- `docs/PRODUCT.md` describes what 3Locale does and the intended user experience.
+- `docs/ARCHITECTURE.md` describes how the application is structured and the boundaries between layers.
+- `docs/TECHNOLOGY.md` lists the approved technology stack.
 
 If these documents conflict, stop and surface the conflict rather than silently choosing one interpretation.
 
@@ -161,7 +161,7 @@ The product name is `3Locale`, but JavaScript/TypeScript identifiers cannot begi
 
 # Testing
 
-Use Vitest for unit/integration tests and Playwright for browser/end-to-end tests as documented in `TECHNOLOGY.md`.
+Use Vitest for unit/integration tests and Playwright for browser/end-to-end tests as documented in `docs/TECHNOLOGY.md`.
 
 Tests should verify behaviour rather than restating implementation details.
 
@@ -185,7 +185,7 @@ For browser-facing features, add or update an end-to-end test when the workflow 
 
 # Development Philosophy
 
-Prefer the simplest implementation that satisfies the current requirement while preserving the architectural boundaries documented in `ARCHITECTURE.md`.
+Prefer the simplest implementation that satisfies the current requirement while preserving the architectural boundaries documented in `docs/ARCHITECTURE.md`.
 
 Do not prematurely build Cloudflare deployment, AWS deployment, queues, object storage, multi-tenancy, billing, enterprise authentication, or other future capabilities unless the active milestone requires them.
 

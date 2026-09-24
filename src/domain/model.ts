@@ -23,11 +23,11 @@ export interface ResourceFormat {
   validateTranslation(source: string, translation: string): boolean;
 }
 export interface ProjectRepository {
-  list(): Project[];
-  create(project: Project): void;
-  get(id: string): ProjectDetail | undefined;
-  import(id: string, entries: SourceEntry[]): void;
-  saveTranslation(id: string, key: string, value: string): boolean;
+  list(): Promise<Project[]>;
+  create(project: Project): Promise<void>;
+  get(id: string): Promise<ProjectDetail | undefined>;
+  import(id: string, entries: SourceEntry[]): Promise<void>;
+  saveTranslation(id: string, key: string, value: string): Promise<boolean>;
 }
 export class AppError extends Error {
   constructor(

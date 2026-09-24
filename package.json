@@ -11,6 +11,7 @@
     "build": "astro build",
     "start": "node ./dist/server/entry.mjs",
     "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "lint": "eslint .",
     "typecheck": "astro check",
     "test": "vitest run",
