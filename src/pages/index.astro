@@ -1,0 +1,20 @@
+---
+import App from "../components/App";
+import { createI18n } from "../i18n";
+import "../styles/global.css";
+const language = Astro.url.searchParams.get("lang") === "ar" ? "ar" : "en";
+const i18n = createI18n(language);
+---
+
+<!doctype html>
+<html lang={language} dir={i18n.dir()}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>{i18n.t('appName')}</title>
+    <meta name="description" content={i18n.t("subtitle")} />
+  </head>
+  <body>
+    <App language={language} client:load />
+  </body>
+</html>
