@@ -51,6 +51,7 @@ npm run build:cloudflare
 npx playwright install chromium
 npm run test:e2e
 npm run test:cloudflare
+npm run test:machine:e2e
 ```
 
 Browser tests run their own server on port 4322 with a separate `data/e2e.db`. Database integration tests use temporary real SQLite databases.
@@ -66,7 +67,7 @@ Browser tests run their own server on port 4322 with a separate `data/e2e.db`. D
 
 Imports are limited to 1 MB of UTF-8, 5,000 string leaves per file, 32 path segments, 500 characters per segment, and 20,000 characters per value. Projects support up to 100 languages including the Base Language. Arrays, non-string leaves, empty objects (including the root), comments, duplicate keys at any level, and trailing commas are rejected. Paths are segment arrays: `["account.name"]` and `["account", "name"]` remain distinct. The editor displays quoted segments separated by `›`. JSON property order and whitespace are not preserved; structure, keys, and values are. Empty translations count as untranslated. Each exported language must have nonblank values with matching placeholders and no pending review for all retained entries. Absent entries are retained. A reimport that would make a path both a string and an object is rejected transactionally. Base Language switching and destructive deletion are not implemented.
 
-The format treats values as opaque text except for simple brace placeholders. It does not interpret ICU messages or i18next plural semantics. Authentication, collaboration, machine translation, and additional formats are future work.
+The format treats values as opaque text except for simple brace placeholders. It does not interpret ICU messages or i18next plural semantics. Authentication, collaboration and additional formats are future work.
 
 ## Structure
 
@@ -90,9 +91,21 @@ Applying commits languages, values, metadata, audit events, and revisions togeth
 
 **Export all target languages (ZIP)** produces canonical filenames such as `fr-FR.json` and `ar.json`. The Base Language is excluded. Every target must pass the same completeness, review, and placeholder validation as single-language export before any archive is produced.
 
-Projects, language records, entries, and persisted translations have ISO UTC lifecycle timestamps. Unchanged reads/imported values do not advance entity timestamps. Translation origins are `manual` or `import`; the string representation can accommodate future origins without implementing them. Migration 3 preserves Milestone 2 state, timestamps historical entities once at migration time, and labels historical base values as imported and target values as manual (the only Milestone 2 write paths). It does not invent historical audit events or checkpoints. Released migrations 1 and 2 remain unchanged.
+Projects, language records, entries, and persisted translations have ISO UTC lifecycle timestamps. Unchanged reads/imported values do not advance entity timestamps. Translation origins are `manual`, `import` or `machine`, with nullable provider/model metadata. Migration 3 preserves Milestone 2 state, timestamps historical entities once at migration time, and labels historical base values as imported and target values as manual (the only Milestone 2 write paths). It does not invent historical audit events or checkpoints. Released migrations 1 and 2 remain unchanged.
 
 Current limits: nested string-only JSON, a batch-wide conflict policy, full snapshots rather than incremental revisions, no audit search, and no Base Language switching or deletion workflow. SQLite commits replace the bounded project localisation snapshot inside a transaction; D1 uses incremental writes through the same asynchronous, version-checked commit contract.
+
+## Milestone 5: automatic translation
+
+Configure your own optional DeepL key using the [BYOK deployment instructions](docs/DEPLOYMENT.md#optional-automatic-translation-byok). 3Locale Community does not provide, proxy or pay for translation usage. DeepL bills your own account. Without a key, all existing localisation workflows remain available.
+
+Choose a target language and **Translate missing**. The offline preview shows the provider, Base Language, target, eligible strings and source Unicode code points. Select all missing entries or one path; confirm before anything is sent. Existing nonblank translations are protected, including manual, imported and machine values. Placeholders are shielded before translation and validated afterwards.
+
+Results show translated/review-required counts and failed paths. Machine values retain provider provenance and block export until approved. Use the per-entry approval action or explicitly confirm bulk approval. Approving unchanged text preserves machine provenance; editing its text changes it to manual and clears provider/model metadata. Later Base Language changes require review again without losing provenance.
+
+Successful automatic translations create before/after checkpoints and structured audit summaries atomically with the values. Invalid individual results remain unchanged while valid results can commit together. A provider/batch failure or stale project prevents the whole operation from committing; an already processed request may still incur provider charges. No empty revisions are created for previews or all-invalid results. Approval is audited without full checkpoints. The newest 100 revisions are retained.
+
+The same service and portable DeepL adapter run on Node/SQLite and Workers/D1. SQLite migration 4 and D1 migration 0002 add nullable provenance fields while preserving historical records. Test-only runtime composition supplies a deterministic fake for English/Arabic browser coverage on port 4324; no real DeepL account is used by tests or CI. See deployment guidance for language mapping, batching, billing estimates and synchronous-operation limits.
 
 ## Licence
 

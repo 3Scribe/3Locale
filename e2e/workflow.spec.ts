@@ -46,6 +46,12 @@ test("multiple languages, nested and literal paths, drafts, progress, review and
     .getByRole("button", { name: "Create project", exact: true })
     .click();
   await expect(page.getByRole("heading", { name })).toBeVisible();
+  await expect(
+    page.getByText(
+      "Automatic translation is optional. Ask the server operator to configure their DeepL API key.",
+      { exact: true },
+    ),
+  ).toBeVisible();
   await upload(
     page,
     '{"account.name":"Name {{name}}","account":{"name":"Account"}}',

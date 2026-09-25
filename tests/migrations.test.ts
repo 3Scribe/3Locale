@@ -50,7 +50,7 @@ it("creates and reopens the evolved schema with language membership constraints"
   const repository = new SqliteProjectRepository(path);
   try {
     expect((await repository.get("project"))?.languages).toEqual(["en", "fr"]);
-    expect(version()).toBe(3);
+    expect(version()).toBe(migrations.length);
     expect(db.prepare("PRAGMA foreign_key_check").all()).toEqual([]);
     const service = new ProjectService(repository, jsonResource);
     await expect(service.import("missing", '{"x":"X"}')).rejects.toThrow(
@@ -156,12 +156,18 @@ it("applies pending migrations in order exactly once", () => {
   seed();
   const future = [
     ...migrations,
-    { version: 4, sql: "CREATE TABLE migration_probe (value TEXT NOT NULL);" },
-    { version: 5, sql: "INSERT INTO migration_probe VALUES ('applied');" },
+    {
+      version: migrations.length + 1,
+      sql: "CREATE TABLE migration_probe (value TEXT NOT NULL);",
+    },
+    {
+      version: migrations.length + 2,
+      sql: "INSERT INTO migration_probe VALUES ('applied');",
+    },
   ];
   migrate(db, future);
   migrate(db, future);
-  expect(version()).toBe(5);
+  expect(version()).toBe(migrations.length + 2);
   expect(db.prepare("SELECT value FROM migration_probe").all()).toEqual([
     { value: "applied" },
   ]);
@@ -174,17 +180,20 @@ it("rolls back schema changes and version on failure and allows a retry", () => 
   migrate(db);
   seed();
   const next = {
-    version: 4,
+    version: migrations.length + 1,
     sql: "CREATE TABLE migration_probe (value TEXT);",
   };
   expect(() =>
     migrate(db, [
       ...migrations,
       next,
-      { version: 5, sql: "INSERT INTO nonexistent VALUES (1);" },
+      {
+        version: migrations.length + 2,
+        sql: "INSERT INTO nonexistent VALUES (1);",
+      },
     ]),
   ).toThrow();
-  expect(version()).toBe(3);
+  expect(version()).toBe(migrations.length);
   expect(
     db
       .prepare("SELECT name FROM sqlite_master WHERE name = 'migration_probe'")
@@ -195,7 +204,7 @@ it("rolls back schema changes and version on failure and allows a retry", () => 
       ?.value,
   ).toBe("Bonjour");
   migrate(db, [...migrations, next]);
-  expect(version()).toBe(4);
+  expect(version()).toBe(migrations.length + 1);
 });
 it("rolls back the version-1 conversion if a later migration fails", () => {
   migrate(db, migrations.slice(0, 1));
@@ -213,14 +222,17 @@ it("rolls back the version-1 conversion if a later migration fails", () => {
     1,
   );
   expect(() =>
-    migrate(db, [...migrations, { version: 4, sql: "INVALID SQL;" }]),
+    migrate(db, [
+      ...migrations,
+      { version: migrations.length + 1, sql: "INVALID SQL;" },
+    ]),
   ).toThrow();
   expect(version()).toBe(1);
   expect(
     db.prepare("SELECT translation, needsReview FROM entries").get(),
   ).toEqual({ translation: "Un", needsReview: 1 });
   migrate(db);
-  expect(version()).toBe(3);
+  expect(version()).toBe(migrations.length);
 });
 it("refuses invalid migration sequences and newer schemas without changing data", () => {
   migrate(db);
@@ -228,12 +240,12 @@ it("refuses invalid migration sequences and newer schemas without changing data"
   expect(() =>
     migrate(db, [
       ...migrations,
-      { version: 5, sql: "DROP TABLE translations;" },
+      { version: migrations.length + 2, sql: "DROP TABLE translations;" },
     ]),
   ).toThrow("consecutive");
-  db.exec("PRAGMA user_version = 4");
+  db.exec(`PRAGMA user_version = ${migrations.length + 1}`);
   expect(() => migrate(db)).toThrow("newer");
-  expect(version()).toBe(4);
+  expect(version()).toBe(migrations.length + 1);
   expect(
     db.prepare("SELECT value FROM translations WHERE language = 'fr'").get()
       ?.value,
@@ -304,6 +316,37 @@ it("migrates a populated Milestone 2 database with stable metadata and all local
     migrate(db);
     expect(await repository.get("m2")).toEqual(detail);
     expect(db.prepare("PRAGMA foreign_key_check").all()).toEqual([]);
+  } finally {
+    repository.close();
+  }
+});
+
+it("adds nullable machine metadata to populated Milestone 4 records without rewriting provenance", async () => {
+  migrate(db, migrations.slice(0, 3));
+  seed();
+  db.exec(
+    "UPDATE translations SET origin=CASE language WHEN 'en' THEN 'import' ELSE 'manual' END",
+  );
+  const before = db
+    .prepare("SELECT * FROM translations ORDER BY language")
+    .all();
+  migrate(db);
+  expect(
+    db.prepare("SELECT * FROM translations ORDER BY language").all(),
+  ).toEqual(
+    before.map((row) => ({ ...row, originProvider: null, originModel: null })),
+  );
+  const repository = new SqliteProjectRepository(path);
+  try {
+    expect(
+      translationFor((await repository.get("project"))!.entries[0], "fr"),
+    ).toMatchObject({
+      origin: "manual",
+      originProvider: null,
+      originModel: null,
+      value: "Bonjour",
+      needsReview: true,
+    });
   } finally {
     repository.close();
   }

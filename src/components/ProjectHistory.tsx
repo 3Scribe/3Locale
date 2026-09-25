@@ -142,7 +142,23 @@ export function ProjectHistory({
                     {t(`history.origins.${event.next.origin}`)}
                   </p>
                 ) : null}
-                {event.summary && <ImportSummary summary={event.summary} />}
+                {event.provider && (
+                  <p>{t("machine.provider", { provider: event.provider })}</p>
+                )}
+                {event.summary &&
+                  (event.kind.startsWith("machine.") ||
+                  event.kind === "translation.approval.bulk" ? (
+                    <dl>
+                      {Object.entries(event.summary).map(([key, value]) => (
+                        <div key={key}>
+                          <dt>{t(`machine.counts.${key}`)}</dt>
+                          <dd>{value}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  ) : (
+                    <ImportSummary summary={event.summary} />
+                  ))}
                 {event.policy && <p>{t(`batch.${event.policy}`)}</p>}
                 {event.files && (
                   <ul>

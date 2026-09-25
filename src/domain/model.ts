@@ -12,6 +12,8 @@ export interface Project extends Lifecycle {
 }
 export interface Translation extends Lifecycle {
   origin: string | null;
+  originProvider?: string | null;
+  originModel?: string | null;
   language: string;
   value: string;
   needsReview: boolean;
@@ -40,6 +42,8 @@ export interface AuditRecord {
   previous?: unknown;
   next?: unknown;
   summary?: Record<string, number>;
+  provider?: string;
+  sourceLanguage?: string;
   policy?: string;
   revisionId?: number;
   files?: { name: string; language: string }[];
@@ -102,6 +106,8 @@ export function translationFor(entry: Entry, language: string): Translation {
       createdAt: "",
       updatedAt: "",
       origin: null,
+      originProvider: null,
+      originModel: null,
     }
   );
 }

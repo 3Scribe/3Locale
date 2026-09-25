@@ -24,7 +24,8 @@
     "db:migrate:remote": "wrangler d1 migrations apply THREELOCALE_DB --remote",
     "deploy": "npm run build:cloudflare && npm run db:migrate:remote && wrangler deploy --config dist-cloudflare/server/wrangler.json",
     "test:d1": "vitest run --config vitest.d1.config.ts",
-    "test:cloudflare": "playwright test --config playwright.cloudflare.config.ts"
+    "test:cloudflare": "playwright test --config playwright.cloudflare.config.ts",
+    "test:machine:e2e": "playwright test --config playwright.machine.config.ts"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.3.3",
@@ -41,6 +42,7 @@
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-i18next": "^17.0.15",
+    "saxes": "^6.0.0",
     "tailwind-merge": "^3.7.0",
     "tailwindcss": "^4.3.3",
     "zod": "^4.6.5"

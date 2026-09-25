@@ -158,3 +158,5 @@ dist-cloudflare/
 .dev.vars
 .dev.vars.*
 !.dev.vars.example
+
+.astro-machine-test/

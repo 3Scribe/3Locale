@@ -22,7 +22,13 @@ export function changes(
       const old = oldEntry?.translations.find(
         (item) => item.language === value.language,
       );
-      if (!old || old.value !== value.value || old.origin !== value.origin)
+      if (
+        !old ||
+        old.value !== value.value ||
+        old.origin !== value.origin ||
+        (old.originProvider ?? null) !== (value.originProvider ?? null) ||
+        (old.originModel ?? null) !== (value.originModel ?? null)
+      )
         events.push({
           kind:
             value.language === next.baseLanguage

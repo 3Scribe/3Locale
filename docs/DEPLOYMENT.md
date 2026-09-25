@@ -13,7 +13,7 @@ npm ci
 npm run dev
 ```
 
-The default database is `data/three-locale.db`; server-only `THREELOCALE_DATABASE_PATH` selects another file. Production: `npm run build`, then `npm start`. Set `HOST=127.0.0.1` and `PORT=4321` for local-only access. SQLite migrations 1–3 remain unchanged and run automatically when the repository opens. Existing Milestone 3 files continue to work. Back up with a SQLite-aware tool, or stop the server before copying the database and WAL files.
+The default database is `data/three-locale.db`; server-only `THREELOCALE_DATABASE_PATH` selects another file. Production: `npm run build`, then `npm start`. Set `HOST=127.0.0.1` and `PORT=4321` for local-only access. SQLite migrations run automatically when the repository opens. Released migrations 1–3 remain unchanged; migration 4 adds nullable machine-provider/model metadata and preserves existing data. Back up with a SQLite-aware tool, or stop the server before copying the database and WAL files.
 
 ## Local Cloudflare development
 
@@ -69,7 +69,7 @@ For forks with a different Worker name, update `name` in Wrangler configuration 
 
 ## Migrations, consistency and limits
 
-SQLite retains its historical TypeScript migrations. D1 starts with `migrations/d1/0001_baseline.sql`, the current schema, using Wrangler's migration tracking. These are separate migration histories with the same logical application behaviour. After release, add a new migration; do not edit an existing migration. Physical SQLite-to-D1 file migration is out of scope; locale JSON import/export provides application-level portability.
+SQLite retains its historical TypeScript migrations. D1 starts with `migrations/d1/0001_baseline.sql`, the Milestone 4 schema, using Wrangler's migration tracking. Milestone 5 adds `0002_machine_provenance.sql` for nullable provider/model metadata. These are separate migration histories with the same logical application behaviour. After release, add a new migration; do not edit an existing migration. Physical SQLite-to-D1 file migration is out of scope; locale JSON import/export provides application-level portability.
 
 D1 calculates changed rows using the previous and next project state. A manual translation edit writes only affected rows and its audit event, without creating a revision. Bulk writes bind JSON arrays, keeping parameter counts small. Full checkpoints use ordered text chunks below D1's per-row/string limit; chunks are reassembled only when reading a revision. Foreign keys and structural-path uniqueness preserve project and language ownership.
 
@@ -79,9 +79,9 @@ D1/Worker limits still apply: database capacity, per-invocation query counts, da
 
 ## Secrets and configuration
 
-No current feature requires a secret. Do not create a placeholder credential to run 3Locale.
+Automatic translation is optional and requires only the deployment owner's DeepL key. Do not create a placeholder credential to run 3Locale without translation.
 
-Future deployment credentials belong in Cloudflare Worker secrets (`npx wrangler secret put THREELOCALE_<NAME>`) and in an ignored `.dev.vars` file for local Worker development. Use the same `THREELOCALE_` convention with server-side environment configuration on Node. `.dev.vars*` and `.env*` are ignored; never put secrets in Wrangler `vars`, public Vite/Astro variables, React props, responses or logs. Runtime composition should read configuration and inject only the capabilities/settings application services need.
+Deployment credentials belong in Cloudflare Worker secrets (`npx wrangler secret put THREELOCALE_<NAME>`) and in an ignored `.dev.vars` file for local Worker development. Use the same `THREELOCALE_` convention with server-side environment configuration on Node. `.dev.vars*` and `.env*` are ignored; never put secrets in Wrangler `vars`, public Vite/Astro variables, React props, responses or logs. Runtime composition should read configuration and inject only the capabilities/settings application services need.
 
 These are self-hoster deployment secrets. Future per-user or per-project credentials require separate application-managed secure storage, which is not implemented here. Cloudflare bindings are read only by `src/server/runtime.cloudflare.ts`; `process.env` stays at the Node composition boundary.
 
@@ -94,3 +94,39 @@ These are self-hoster deployment secrets. Future per-user or per-project credent
 - [D1 limits](https://developers.cloudflare.com/d1/platform/limits/)
 - [Deploy to Cloudflare buttons](https://developers.cloudflare.com/workers/platform/deploy-buttons/)
 - [Worker secrets](https://developers.cloudflare.com/workers/configuration/secrets/)
+
+## Optional automatic translation (BYOK)
+
+DeepL is the first adapter because it provides a dedicated translation API with documented batching, language mapping and XML placeholder protection. Obtain an API key for your own DeepL API Free or Pro account. The key is deployment-wide and optional. Community neither proxies nor pays for usage; DeepL charges your account. All other workflows operate without it.
+
+**Node:** inject `THREELOCALE_DEEPL_API_KEY` into the server process using your host's secret/environment facility, then restart the server. For local use, an ignored environment file loaded by Node with `node --env-file=.env dist/server/entry.mjs` is also possible; keep its permissions restricted. The Node runtime reads `process.env` only on the server. Do not use a public Vite/Astro variable or put a key in source code or command-line arguments.
+
+**Cloudflare:** after deploying the correct Worker, add the runtime secret through Wrangler's interactive prompt:
+
+```sh
+npx wrangler secret put THREELOCALE_DEEPL_API_KEY
+```
+
+Run in the configured project with the intended Worker name/account (and the matching `--env` if you operate named environments). For local Worker development, put the same key in ignored `.dev.vars` as `THREELOCALE_DEEPL_API_KEY=<your key>`. Never add it to Wrangler `vars` or deployment-button metadata. The optional secret is typed at runtime composition; it does not require a placeholder binding or key for builds/tests. Key removal disables translation without affecting other data. Free keys ending in `:fx` select DeepL's API Free endpoint; others use Pro. Requests use the authorization header, fixed HTTPS endpoints and no redirects.
+
+There is still no application authentication. Anyone who can reach the instance can trigger translation charges when a key is configured. Restrict access at the deployment layer and use DeepL account limits appropriate to your deployment. Do not expose an unrestricted instance with a paid key.
+
+### Languages, counting and limits
+
+Capability checks use an offline catalogue verified against DeepL's supported language types on 2026-09-25. Source regional tags map to their base language. Target `en` defaults to `EN-US`, `en-GB` to `EN-GB`, `pt` to `PT-PT`, and `pt-BR` to `PT-BR`; other English/Portuguese regions are rejected rather than guessed. Chinese script tags select Hans/Hant; TW/HK/MO default to Hant and other regions/default to Hans. `es-419` is retained. Other supported regional tags map to the provider's base language (for example `fr-CA` → `FR`); explicit non-Chinese script variants are rejected for targets. Stored project language tags are never rewritten. The catalogue can lag new provider support; runtime errors are returned safely without fetching capabilities during previews.
+
+Preview source characters count original source Unicode code points (including placeholders), not UTF-8 bytes or JavaScript UTF-16 units. This is an estimate, not a price quote: protected placeholder text is sent as XML attributes, which DeepL excludes from billing, and provider accounting may differ. When every result includes billed characters, the operation reports their sum separately. Model metadata is stored only when DeepL actually reports it.
+
+The adapter batches at most 50 texts and 120,000 serialized UTF-8 bytes, leaving headroom below DeepL's 128 KiB request limit. A single oversized protected item is rejected before any request. Batches run sequentially, with a 30-second timeout per request, a 4 MB response bound and no automatic retries. The synchronous operation remains one atomic project commit. A later batch/network failure or stale version discards all results, but earlier provider calls may already have been charged. Invalid individual texts can be skipped while valid results commit; all-invalid output creates no revision. Retrying is a new explicit request and can incur further charges.
+
+Large jobs must fit the host's request, CPU, memory and subrequest budgets. No queue, resumable job or billing ledger is implemented. Review all generated output; only simple brace placeholders are understood, not ICU/plural semantics. Repository tests use injected fake translation/fetch and never contact DeepL; deployment/account connectivity has not been validated with a real key.
+
+### Translation references
+
+- [DeepL translation request and XML options](https://developers.deepl.com/api-reference/translate/request-translation)
+- [DeepL usage limits and character counting](https://developers.deepl.com/docs/resources/usage-limits)
+- [DeepL XML handling](https://developers.deepl.com/docs/translate/translating-xml)
+- [DeepL billing and XML exclusions](https://support.deepl.com/hc/en-us/articles/360020685720-Usage-count-and-billing-in-DeepL-API)
+- [DeepL supported languages](https://developers.deepl.com/docs/getting-started/supported-languages)
+- [DeepL official SDK language catalogue](https://github.com/DeepLcom/deepl-node/blob/main/src/types.ts)
+- [Worker secret configuration](https://developers.cloudflare.com/workers/configuration/secrets/)

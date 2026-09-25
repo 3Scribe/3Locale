@@ -43,6 +43,8 @@ export function setValue(
   needsReview: boolean,
   origin: string,
   now: string,
+  originProvider: string | null = null,
+  originModel: string | null = null,
 ) {
   const previous = entry.translations.find(
     (item) => item.language === language,
@@ -51,7 +53,9 @@ export function setValue(
     previous &&
     previous.value === value &&
     previous.needsReview === needsReview &&
-    previous.origin === origin
+    previous.origin === origin &&
+    (previous.originProvider ?? null) === originProvider &&
+    (previous.originModel ?? null) === originModel
   )
     return;
   const next: Translation = {
@@ -59,6 +63,8 @@ export function setValue(
     value,
     needsReview,
     origin,
+    originProvider,
+    originModel,
     createdAt: previous?.createdAt ?? now,
     updatedAt: now,
   };
@@ -213,6 +219,8 @@ export function analyseImport(
               true,
               value.origin ?? "manual",
               now,
+              value.originProvider ?? null,
+              value.originModel ?? null,
             );
           }
       }

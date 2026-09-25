@@ -44,7 +44,7 @@ export class SqliteProjectRepository implements ProjectRepository {
       .all(id) as unknown as (Lifecycle & { id: number; path: string })[];
     const values = this.db
       .prepare(
-        "SELECT entryId, language, value, needsReview, createdAt, updatedAt, origin FROM translations WHERE projectId = ?",
+        "SELECT entryId, language, value, needsReview, createdAt, updatedAt, origin, originProvider, originModel FROM translations WHERE projectId = ?",
       )
       .all(id) as unknown as (Translation & { entryId: number })[];
     const byEntry = new Map<number, Translation[]>();
@@ -128,7 +128,7 @@ export class SqliteProjectRepository implements ProjectRepository {
         "INSERT INTO resource_entries (projectId, id, path, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?)",
       );
       const valueInsert = this.db.prepare(
-        "INSERT INTO translations (projectId, entryId, language, value, needsReview, createdAt, updatedAt, origin) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO translations (projectId, entryId, language, value, needsReview, createdAt, updatedAt, origin, originProvider, originModel) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       );
       for (const entry of project.entries) {
         entryInsert.run(
@@ -148,6 +148,8 @@ export class SqliteProjectRepository implements ProjectRepository {
             value.createdAt,
             value.updatedAt,
             value.origin,
+            value.originProvider ?? null,
+            value.originModel ?? null,
           );
       }
       const audit = this.db.prepare(
