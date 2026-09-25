@@ -62,6 +62,8 @@ export interface Checkpoint {
   createdAt: string;
 }
 export interface ProjectCommit {
+  // The unmodified state read at expectedVersion lets adapters calculate incremental writes.
+  previous: ProjectDetail | undefined;
   project: ProjectDetail;
   expectedVersion: number | null;
   occurredAt: string;

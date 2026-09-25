@@ -330,6 +330,7 @@ it("rejects stale previews and stale commits across repository connections", asy
     await service.addLanguage(input.id, "ja");
     await expect(
       other.commit({
+        previous: state,
         project: state,
         expectedVersion: state.version,
         events: [],

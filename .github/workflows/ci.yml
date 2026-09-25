@@ -21,6 +21,9 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      - run: npm run test:d1
       - run: npm run build
+      - run: npm run build:cloudflare
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+      - run: npm run test:cloudflare

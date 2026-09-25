@@ -8,7 +8,7 @@ The initial goal is to provide a lightweight, developer-focused localisation man
 
 The architecture should remain simple, modular, testable, and portable between deployment environments.
 
-The first implementation will run locally using Node.js and SQLite. Future deployments may target Cloudflare Workers and other serverless environments.
+The application supports Node.js with SQLite and Cloudflare Workers with D1. Other serverless environments remain future targets.
 
 ## Architectural Principles
 
@@ -329,7 +329,7 @@ Multi-tenancy does not need to be implemented until required, but early schema a
 
 ## Hosted Cloud Architecture
 
-A likely future Cloudflare deployment is:
+A possible future managed Cloud deployment is (R2 and Queues are not provisioned by Community Milestone 4):
 
 ```text
 Browser
@@ -359,7 +359,7 @@ Potential uses include:
 * R2 for uploaded files and screenshots;
 * Queues for translation jobs, imports, exports, and Git synchronisation.
 
-The Cloudflare architecture is a future deployment target, not a requirement for the initial local implementation.
+Community Milestone 4 runs Astro/React/API on Workers with D1 only. The additional managed Cloud services above remain future possibilities.
 
 ## Background Work
 
@@ -531,3 +531,11 @@ Revisions independently store the complete localisation snapshot and metadata. B
 The application supplies UTC ISO timestamps through an injectable clock. Translation provenance is an extensible string (`manual`/`import` currently), not a provider dependency. Migration 3 backfills all historical lifecycle times consistently from one migration-time timestamp. Existing base translations have import origin and existing targets manual origin, matching Milestone 2 capabilities. It preserves existing identifiers, paths, languages, values and review states and adds audit/revision tables; released migrations remain unchanged.
 
 Batch export validates all target languages from one project snapshot before passing filename/text pairs to an asynchronous archive port. The `fflate` ZIP adapter belongs in `providers`; application/domain code do not import ZIP, filesystem or SQLite APIs. Full-snapshot storage and replacement favour simple correctness for the bounded local milestone; incremental persistence and archive streaming can be considered if measured scale warrants them.
+
+## Milestone 4: runtime composition and D1
+
+The build alias `@runtime` resolves to `src/server/runtime.ts` for Node/SQLite or `src/server/runtime.cloudflare.ts` for Workers/D1. Routes use that single composition port; application/domain modules have no platform detection. Cloudflare bindings and Node environment settings remain in those composition modules. Default development/build commands preserve Node support; explicit Cloudflare commands produce a separate artifact.
+
+`ProjectCommit` includes the previous versioned snapshot and next state. Services already hold both; D1 calculates changed rows at the persistence boundary, while SQLite retains its transactional snapshot strategy. Callers must supply the actual previously read state and matching expected version, without mutating it. D1 validates version consistency and performs the authoritative version guard in the database batch. A named CHECK constraint aborts a stale batch before state/history writes; successful commits remove their guard row. Changes, audit, checkpoint chunks and 100-revision retention commit or roll back together. No manual save rewrites unchanged translations or creates a checkpoint.
+
+The D1 baseline schema preserves structural-path uniqueness, project/entry/language foreign keys, lifecycle and provenance fields, audit pagination indexes and project-isolated revisions. Large snapshots use ordered chunks below the D1 row limit. SQLite migrations 1–3 remain unchanged; D1 has its own forward-only Wrangler migration history. Shared contracts exercise both real stores, including concurrent writers and a failure after retention deletion. D1-specific tests protect write efficiency and multi-megabyte Unicode checkpoints. A focused smoke test runs the built Worker; application behaviour is otherwise shared. See [deployment](DEPLOYMENT.md) for operations, limits, secrets and the unauthenticated-instance warning.

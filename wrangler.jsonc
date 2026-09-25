@@ -1,0 +1,13 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "three-locale-community",
+  "main": "@astrojs/cloudflare/entrypoints/server",
+  "compatibility_date": "2026-09-25",
+  "d1_databases": [
+    {
+      "binding": "THREELOCALE_DB",
+      "database_name": "three-locale-community",
+      "migrations_dir": "migrations/d1",
+    },
+  ],
+}

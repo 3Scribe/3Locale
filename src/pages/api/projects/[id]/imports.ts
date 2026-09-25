@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { projects } from "../../../../server/runtime";
+import { projects } from "@runtime";
 import { handle, json, readJson, projectId } from "../../../../server/http";
 import { batchInput, beforeInput } from "../../../../server/import-http";
 import { AppError } from "../../../../domain/model";

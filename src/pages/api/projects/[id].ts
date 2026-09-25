@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { projects } from "../../../server/runtime";
+import { projects } from "@runtime";
 import {
   actionInput,
   handle,

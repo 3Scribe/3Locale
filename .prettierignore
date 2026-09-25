@@ -9,3 +9,7 @@ AGENTS.md
 docs/PRODUCT.md
 docs/ARCHITECTURE.md
 docs/TECHNOLOGY.md
+dist-cloudflare
+.astro-cloudflare
+.wrangler
+worker-configuration.d.ts

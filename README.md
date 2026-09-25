@@ -1,6 +1,12 @@
 # 3Locale
 
-A local localisation workspace built with Astro, React, and SQLite.
+A localisation workspace built with Astro and React, supporting Node/SQLite and Cloudflare Workers/D1.
+
+**No authentication is implemented yet. Anyone who can reach a deployed instance can read and modify projects. Restrict access before hosting sensitive data.**
+
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/3Scribe/3Locale)
+
+See [deployment instructions](docs/DEPLOYMENT.md) for local D1 development, manual deployment, button setup, migrations, secrets and current limits.
 
 ## Run locally
 
@@ -29,7 +35,7 @@ npm run build
 npm start
 ```
 
-Set `HOST=127.0.0.1` and `PORT=4321` in your shell for a loopback-only production server. This milestone has no authentication; run it locally. Hosted or shared access requires the later authentication milestone.
+Set `HOST=127.0.0.1` and `PORT=4321` in your shell for a loopback-only production server. This milestone has no authentication; hosted access requires deployment-layer protection until the authentication milestone.
 
 ## Checks
 
@@ -39,9 +45,12 @@ npm run format:check
 npm run lint
 npm run typecheck
 npm test
+npm run test:d1
 npm run build
+npm run build:cloudflare
 npx playwright install chromium
 npm run test:e2e
+npm run test:cloudflare
 ```
 
 Browser tests run their own server on port 4322 with a separate `data/e2e.db`. Database integration tests use temporary real SQLite databases.
@@ -61,13 +70,13 @@ The format treats values as opaque text except for simple brace placeholders. It
 
 ## Structure
 
-`src/domain` defines portable models and ports; `src/application` coordinates use cases; `src/persistence` contains the SQLite adapter and versioned migration; `src/providers` contains the JSON format; `src/server` composes the runtime and HTTP validation; `src/pages/api` contains thin routes. React components use i18next resources under `src/i18n` and shadcn/ui controls.
+`src/domain` defines portable models and ports; `src/application` coordinates use cases; `src/persistence` contains SQLite and D1 adapters and persistence deltas; `migrations/d1` contains Wrangler migrations; `src/providers` contains the JSON format; `src/server` composes the runtime and HTTP validation; `src/pages/api` contains thin routes. React components use i18next resources under `src/i18n` and shadcn/ui controls.
 
-The initial adapter uses Node's built-in `node:sqlite` (which may print an experimental warning on Node 24). Only the adapter imports SQLite. Zod validates HTTP input; jsonc-parser detects duplicate properties before mapping into the format-neutral model. These supporting libraries avoid hand-written input parsers. Repository operations and application services return promises; the SQLite adapter retains synchronous SQLite execution internally. Future async adapters can implement the same repository contract. Schema startup runs the ordered migrations in `src/persistence/migrations.ts` transactionally, recording the version with SQLite `user_version`. Migration 2 converts version-1 projects into project-language records and entries with structural paths, copying both base values and target translations (including empty values and review flags) into per-language translation records. Existing flat keys become single-segment paths. The released first migration is unchanged. Add consecutive forward migrations rather than editing released migrations; failures roll back pending changes and newer schemas are rejected.
+The initial adapter uses Node's built-in `node:sqlite` (which may print an experimental warning on Node 24). Only the adapter imports SQLite. Zod validates HTTP input; jsonc-parser detects duplicate properties before mapping into the format-neutral model. These supporting libraries avoid hand-written input parsers. Repository operations and application services return promises; the SQLite adapter retains synchronous SQLite execution internally. Both adapters implement the asynchronous repository contract. Commits include previous and next state so D1 can calculate incremental writes. Schema startup runs the ordered migrations in `src/persistence/migrations.ts` transactionally, recording the version with SQLite `user_version`. Migration 2 converts version-1 projects into project-language records and entries with structural paths, copying both base values and target translations (including empty values and review flags) into per-language translation records. Existing flat keys become single-segment paths. The released first migration is unchanged. Add consecutive forward migrations rather than editing released migrations; failures roll back pending changes and newer schemas are rejected.
 
 See [product](docs/PRODUCT.md), [architecture](docs/ARCHITECTURE.md), [technology](docs/TECHNOLOGY.md), and [agent guidance](AGENTS.md).
 
-GitHub Actions runs `format:check`, lint, typecheck, Vitest, build, and Chromium Playwright tests on pull requests to `main` and pushes to `main`, using Node 24. `format:check` reports formatting differences without modifying files.
+GitHub Actions runs `format:check`, lint, typecheck, Vitest including shared SQLite/D1 contracts, both builds, Chromium Playwright tests, and a built-Worker smoke test on pull requests to `main` and pushes to `main`, using Node 24. `format:check` reports formatting differences without modifying files.
 
 ## Milestone 3: imports and recovery
 
@@ -83,7 +92,7 @@ Applying commits languages, values, metadata, audit events, and revisions togeth
 
 Projects, language records, entries, and persisted translations have ISO UTC lifecycle timestamps. Unchanged reads/imported values do not advance entity timestamps. Translation origins are `manual` or `import`; the string representation can accommodate future origins without implementing them. Migration 3 preserves Milestone 2 state, timestamps historical entities once at migration time, and labels historical base values as imported and target values as manual (the only Milestone 2 write paths). It does not invent historical audit events or checkpoints. Released migrations 1 and 2 remain unchanged.
 
-Current limits: nested string-only JSON, a batch-wide conflict policy, full snapshots rather than incremental revisions, no audit search, and no Base Language switching or deletion workflow. SQLite commits replace the bounded project localisation snapshot inside a transaction; larger deployments may need a more incremental adapter while retaining the same asynchronous, version-checked commit contract.
+Current limits: nested string-only JSON, a batch-wide conflict policy, full snapshots rather than incremental revisions, no audit search, and no Base Language switching or deletion workflow. SQLite commits replace the bounded project localisation snapshot inside a transaction; D1 uses incremental writes through the same asynchronous, version-checked commit contract.
 
 ## Licence
 
