@@ -6,6 +6,10 @@ export default defineConfig(
   {
     ignores: [
       "dist/**",
+      "dist-cloudflare/**",
+      ".astro-cloudflare/**",
+      ".wrangler/**",
+      "worker-configuration.d.ts",
       ".astro/**",
       "node_modules/**",
       "playwright-report/**",

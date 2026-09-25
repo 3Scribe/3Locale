@@ -1,6 +1,5 @@
 import type { APIRoute } from "astro";
-import { randomUUID } from "node:crypto";
-import { projects } from "../../server/runtime";
+import { projects } from "@runtime";
 import { handle, json, readJson } from "../../server/http";
 import { newImportInput } from "../../server/import-http";
 import { AppError } from "../../domain/model";
@@ -8,7 +7,7 @@ export const POST: APIRoute = ({ request }) =>
   handle(async () => {
     const data = newImportInput.parse(await readJson(request, 22_000_000));
     const input = {
-      id: randomUUID(),
+      id: crypto.randomUUID(),
       name: data.name,
       baseLanguage: data.baseLanguage,
       targetLanguages: [],

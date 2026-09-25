@@ -70,7 +70,7 @@ Do not change or weaken a test merely to make the suite pass. Understand the fai
 
 3Locale is a single full-stack Astro application.
 
-The initial runtime is Node.js with SQLite. The same application should remain portable to future deployments such as Cloudflare Workers with D1/R2/Queues or other serverless environments.
+Supported runtimes are Node.js with SQLite and Cloudflare Workers with D1. Select adapters only at the server composition/build boundary; domain and application code must not read environment variables or Cloudflare bindings.
 
 The application contains these conceptual layers:
 
@@ -187,10 +187,14 @@ For browser-facing features, add or update an end-to-end test when the workflow 
 
 Prefer the simplest implementation that satisfies the current requirement while preserving the architectural boundaries documented in `docs/ARCHITECTURE.md`.
 
-Do not prematurely build Cloudflare deployment, AWS deployment, queues, object storage, multi-tenancy, billing, enterprise authentication, or other future capabilities unless the active milestone requires them.
+Do not prematurely build AWS deployment, queues, object storage, multi-tenancy, billing, enterprise authentication, or other future capabilities unless the active milestone requires them.
 
 When a task reveals a reusable project rule, update this file or the relevant project document so future agents do not have to rediscover the same decision.
 
 # Import and History Consistency
 
 Import plans must remain read-only. Apply must check the analysed project version and commit localisation changes, audit events, checkpoints and retention atomically behind the repository interface. Revision history is independent of audit; individual translation saves must not create full checkpoints. Keep the newest 100 revisions per project, without edition-specific limits. Inject a portable UTC clock for meaningful lifecycle changes and preserve unchanged metadata.
+
+# Multiple Runtime Validation
+
+Run the shared repository contract on both SQLite and real local D1. Validate both builds and the focused built-Worker smoke test as well as existing Playwright coverage. D1 commits must atomically guard the expected version, state, audit, checkpoints and retention in one batch. Never substitute a read-then-write version check or whole-project rewrite for incremental D1 writes. Keep released SQLite and D1 migrations forward-only in their separate histories. Deployment instructions belong in `docs/DEPLOYMENT.md`.

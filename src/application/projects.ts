@@ -70,6 +70,7 @@ export class ProjectService {
     const events = changes(previous, next);
     if (event) events.push(event);
     await this.repository.commit({
+      previous,
       project: next,
       expectedVersion: previous?.version ?? null,
       occurredAt: now,
@@ -342,6 +343,7 @@ export class ProjectService {
       entry.updatedAt = changed ? now : old!.updatedAt;
     }
     await this.repository.commit({
+      previous,
       project: next,
       expectedVersion: previous.version,
       occurredAt: now,

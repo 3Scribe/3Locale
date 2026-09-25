@@ -27,7 +27,7 @@ async function request<T>(url: string, body?: unknown): Promise<T> {
           body: JSON.stringify(body),
         },
   );
-  const result = await response.json();
+  const result = (await response.json()) as { error?: string };
   if (!response.ok) throw new Error(result.error ?? "unexpected");
   return result as T;
 }
@@ -304,7 +304,9 @@ function Workspace() {
                     `/api/projects/${project.id}?export=true&language=${encodeURIComponent(selectedLanguage)}`,
                   );
                   if (!response.ok) {
-                    const result = await response.json();
+                    const result = (await response.json()) as {
+                      error?: string;
+                    };
                     throw new Error(result.error);
                   }
                   const url = URL.createObjectURL(await response.blob());

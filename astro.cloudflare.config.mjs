@@ -1,18 +1,21 @@
-import { fileURLToPath, URL } from "node:url";
 import { defineConfig } from "astro/config";
-import node from "@astrojs/node";
+import cloudflare from "@astrojs/cloudflare";
 import react from "@astrojs/react";
 import tailwind from "@tailwindcss/vite";
+import { fileURLToPath, URL } from "node:url";
 export default defineConfig({
   output: "server",
-  adapter: node({ mode: "standalone" }),
+  outDir: "./dist-cloudflare",
+  cacheDir: "./.astro-cloudflare",
+  session: false,
+  adapter: cloudflare({ imageService: "passthrough" }),
   integrations: [react()],
   vite: {
     plugins: [tailwind()],
     resolve: {
       alias: {
         "@runtime": fileURLToPath(
-          new URL("./src/server/runtime.ts", import.meta.url),
+          new URL("./src/server/runtime.cloudflare.ts", import.meta.url),
         ),
       },
     },

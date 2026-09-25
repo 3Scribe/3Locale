@@ -150,3 +150,11 @@ playwright-report/
 *.db
 *.db-shm
 *.db-wal
+
+# Cloudflare tooling, build output and local deployment secrets
+.wrangler/
+.astro-cloudflare/
+dist-cloudflare/
+.dev.vars
+.dev.vars.*
+!.dev.vars.example

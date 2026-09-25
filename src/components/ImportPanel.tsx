@@ -20,9 +20,9 @@ export async function api<T>(url: string, body?: unknown): Promise<T> {
           body: JSON.stringify(body),
         },
   );
-  const result = await response.json();
+  const result = (await response.json()) as { error?: string };
   if (!response.ok) throw new Error(result.error ?? "unexpected");
-  return result;
+  return result as T;
 }
 export function ImportSummary({
   summary,

@@ -79,7 +79,10 @@ export function ProjectHistory({
           onClick={() =>
             void run(async () => {
               const response = await fetch(`${endpoint}?view=archive`);
-              if (!response.ok) throw new Error((await response.json()).error);
+              if (!response.ok)
+                throw new Error(
+                  ((await response.json()) as { error?: string }).error,
+                );
               const url = URL.createObjectURL(await response.blob());
               const link = document.createElement("a");
               link.href = url;

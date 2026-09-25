@@ -870,3 +870,7 @@ Batch export creates a ZIP with one canonical-language JSON filename per target,
 ## Community licence
 
 3Locale Community is licensed under the GNU Affero General Public License v3.0 only (`AGPL-3.0-only`); see [LICENSE](../LICENSE). Previously published MIT-licensed versions retain their original licence. Future repository versions covered by this change use `AGPL-3.0-only`.
+
+## Milestone 4: Community deployment portability
+
+The existing localisation, import/reconciliation, audit, revision/restoration and JSON/ZIP workflows run on Node/SQLite or Cloudflare Workers/D1 with the same behaviour. English/Arabic and RTL remain supported. This milestone adds deployment infrastructure, not authentication, collaboration or machine translation. Anyone who can reach an instance can read and modify its projects; publicly reachable deployments need external access restriction and must not be presented as shared production services. Physical SQLite-to-D1 migration is outside scope; locale import/export remains available. See [deployment guidance](DEPLOYMENT.md).
