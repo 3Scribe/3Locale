@@ -147,7 +147,9 @@ Machine translation must be accessed through provider abstractions.
 
 The core application must not depend directly on Google, Microsoft, DeepL, an LLM provider, or another specific vendor.
 
-Machine-generated translations must remain editable and should retain enough metadata to identify their origin when machine translation is introduced.
+Machine-generated translations require review and retain provider/model provenance. Approval of unchanged text preserves provenance; manual replacement clears provider/model metadata. Base Language changes preserve provenance while requiring review again.
+
+Translation previews and capability checks must remain offline. Only explicitly confirmed translation actions may invoke a provider. Recompute eligibility server-side, shield placeholders before sending, validate restored output, and enforce the project version both around external calls and at atomic persistence. Do not log provider credentials or raw provider responses. Test providers belong only in test composition, never production configuration.
 
 # Environment and Secrets
 

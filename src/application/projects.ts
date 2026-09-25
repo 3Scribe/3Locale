@@ -232,7 +232,21 @@ export class ProjectService {
     )
       throw new AppError("placeholders");
     const old = translationFor(entry, language);
-    if (old.value === value && !old.needsReview) return previous;
+    if (old.value === value) {
+      if (!old.needsReview) return previous;
+      setValue(
+        next,
+        entry,
+        language,
+        value,
+        false,
+        old.origin === "machine" ? "machine" : "manual",
+        this.clock(),
+        old.originProvider ?? null,
+        old.originModel ?? null,
+      );
+      return this.save(previous, next);
+    }
     setValue(next, entry, language, value, false, "manual", this.clock());
     return this.save(previous, next);
   }
@@ -305,11 +319,21 @@ export class ProjectService {
             path: entry.path,
             translation: entry.translations
               .filter((value) => value.language === language)
-              .map(({ value, needsReview, origin }) => ({
-                value,
-                needsReview,
-                origin,
-              })),
+              .map(
+                ({
+                  value,
+                  needsReview,
+                  origin,
+                  originProvider,
+                  originModel,
+                }) => ({
+                  value,
+                  needsReview,
+                  origin,
+                  originProvider: originProvider ?? null,
+                  originModel: originModel ?? null,
+                }),
+              ),
           }))
           .sort((a, b) =>
             JSON.stringify(a.path).localeCompare(JSON.stringify(b.path)),
@@ -335,7 +359,9 @@ export class ProjectService {
           prior &&
           prior.value === value.value &&
           prior.needsReview === value.needsReview &&
-          prior.origin === value.origin;
+          prior.origin === value.origin &&
+          (prior.originProvider ?? null) === (value.originProvider ?? null) &&
+          (prior.originModel ?? null) === (value.originModel ?? null);
         value.createdAt = prior?.createdAt ?? value.createdAt;
         value.updatedAt = same ? prior.updatedAt : now;
         if (!same) changed = true;

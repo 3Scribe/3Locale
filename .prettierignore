@@ -13,3 +13,5 @@ dist-cloudflare
 .astro-cloudflare
 .wrangler
 worker-configuration.d.ts
+
+.astro-machine-test/

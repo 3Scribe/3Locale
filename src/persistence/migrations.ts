@@ -1,3 +1,4 @@
+import { machineProvenance } from "./migrations/004-machine-provenance";
 import { historyMetadata } from "./migrations/003-history-metadata";
 import type { DatabaseSync } from "node:sqlite";
 import { initialSchema } from "./migrations/001-initial-schema";
@@ -11,6 +12,7 @@ export const migrations: readonly Migration[] = [
   initialSchema,
   projectLanguages,
   historyMetadata,
+  machineProvenance,
 ];
 
 export function migrate(

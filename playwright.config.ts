@@ -7,6 +7,9 @@ export default defineConfig({
     command: "npm run dev -- --port 4322",
     url: "http://127.0.0.1:4322",
     reuseExistingServer: false,
-    env: { THREELOCALE_DATABASE_PATH: "data/e2e.db" },
+    env: {
+      THREELOCALE_DATABASE_PATH: "data/e2e.db",
+      THREELOCALE_DEEPL_API_KEY: "",
+    },
   },
 });

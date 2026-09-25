@@ -20,6 +20,15 @@ test("built Worker serves hydrated RTL UI and persists import, edit, export and 
   ).json()) as ProjectDetail[];
   const id = projects[0].id,
     endpoint = `/api/projects/${id}`;
+  const machineStatus = await request.post(endpoint + "/machine", {
+    data: { action: "preview", language: "fr" },
+  });
+  expect(machineStatus.ok()).toBe(true);
+  expect(await machineStatus.json()).toMatchObject({
+    provider: "deepl",
+    configured: false,
+    supported: true,
+  });
   const files = [
     {
       name: "en.json",

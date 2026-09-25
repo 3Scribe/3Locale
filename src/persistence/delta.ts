@@ -38,6 +38,8 @@ export function projectDelta({
       "createdAt",
       "updatedAt",
       "origin",
+      "originProvider",
+      "originModel",
     ],
     keys: ["projectId", "entryId", "language"],
     rows: [],
@@ -113,6 +115,8 @@ export function projectDelta({
           value.createdAt,
           value.updatedAt,
           value.origin,
+          value.originProvider ?? null,
+          value.originModel ?? null,
         ]);
   }
   return [languages, entries, translations];

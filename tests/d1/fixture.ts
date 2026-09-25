@@ -4,7 +4,7 @@ import { readFile, readdir } from "node:fs/promises";
 import ts from "typescript";
 import { AppError, type ProjectRepository } from "../../src/domain/model";
 
-export async function d1Fixture() {
+export async function d1Fixture(migrationCount = Number.POSITIVE_INFINITY) {
   const modules: Record<string, { type: "esm"; contents: string }> = {};
   for (const name of [
     "src/persistence/d1",
@@ -77,13 +77,22 @@ export default {async fetch(request,env) {
   try {
     for (const name of (await readdir("migrations/d1"))
       .filter((name) => name.endsWith(".sql"))
-      .sort())
+      .sort()
+      .slice(0, migrationCount))
       await invoke(
         "sql",
         unstable_splitSqlQuery(await readFile(`migrations/d1/${name}`, "utf8")),
       );
     return {
       repository,
+      async applyMigration(name: string) {
+        await invoke(
+          "sql",
+          unstable_splitSqlQuery(
+            await readFile(`migrations/d1/${name}`, "utf8"),
+          ),
+        );
+      },
       async execute(sql: string) {
         await invoke("sql", [sql]);
       },

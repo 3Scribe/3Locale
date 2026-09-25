@@ -46,7 +46,16 @@
     "batchTooLarge": "Select at most 20 files and 10 MB in total.",
     "baseFileRequired": "Include and confirm a file for the chosen Base Language.",
     "stalePreview": "The project changed. Reload the project and analyse again before applying or restoring.",
-    "conflictPolicyRequired": "Choose how to resolve translation conflicts."
+    "conflictPolicyRequired": "Choose how to resolve translation conflicts.",
+    "machineNotConfigured": "Automatic translation is optional. Ask the server operator to configure their DeepL API key.",
+    "machineUnsupported": "This language pair is not supported by the translation provider.",
+    "machineInvalidResult": "The result was invalid or changed protected placeholders. This entry was not saved.",
+    "machineCredentials": "DeepL rejected the configured credentials. Contact the server operator.",
+    "machineRateLimit": "DeepL rate limit reached. Try again later.",
+    "machineQuota": "The DeepL account quota has been reached.",
+    "machineUnavailable": "The translation provider is unavailable. No translations were saved.",
+    "machineRequestTooLarge": "The protected text exceeds the provider request limit. Translate fewer or shorter strings.",
+    "machineMalformedResponse": "The provider returned an invalid response. No translations were saved."
   },
   "baseLanguage": "Base Language",
   "baseText": "Base Language text",
@@ -107,10 +116,11 @@
     "origin": "Origin",
     "origins": {
       "manual": "Manual",
-      "import": "Import"
+      "import": "Import",
+      "machine": "Machine"
     },
     "more": "Load older events",
-    "retention": "The most recent 100 revisions are retained per project. Imports and restorations create checkpoints; individual translation saves do not.",
+    "retention": "The most recent 100 revisions are retained per project. Imports, automatic translations and restorations create checkpoints; individual saves and approvals do not.",
     "revisionNumber": "Revision {{id}}",
     "beforeImport": "Before import",
     "afterImport": "After import",
@@ -129,7 +139,44 @@
       "review.changed": "Review state changed",
       "base.imported": "Base Language file imported",
       "batch.imported": "Locale files imported",
-      "revision.restored": "Revision restored"
-    }
+      "revision.restored": "Revision restored",
+      "machine.translation.completed": "Automatic translation completed",
+      "translation.approved": "Translation approved",
+      "translation.approval.bulk": "Machine translations approved in bulk"
+    },
+    "beforeMachineTranslation": "Before automatic translation",
+    "afterMachineTranslation": "After automatic translation"
+  },
+  "machine": {
+    "title": "Automatic translation",
+    "scope": "Strings to translate",
+    "allMissing": "All missing strings",
+    "provider": "Provider: {{provider}}",
+    "direction": "From {{source}} to {{target}}",
+    "translateMissing": "Translate missing",
+    "warning": "Send {{count}} strings ({{characters}} source characters) to {{provider}} for translation into {{target}}? DeepL bills your own account. Unsaved edits will be discarded. A stale result may incur cost without being saved.",
+    "confirm": "I confirm sending this text to the provider",
+    "cancel": "Cancel",
+    "translateConfirm": "Confirm automatic translation",
+    "working": "Translating…",
+    "result": "Translated: {{translated}} · Needs review: {{translated}} · Failed: {{failed}}",
+    "approveWarning": "I have reviewed these {{count}} machine translations and confirm bulk approval. Unsaved edits will be discarded.",
+    "approveAll": "Approve all machine translations",
+    "approve": "Approve translation",
+    "approveFor": "Approve translation for {{key}}",
+    "badge": "Machine translated · {{provider}}",
+    "unknownProvider": "Unknown provider",
+    "counts": {
+      "requested": "Requested strings",
+      "eligible": "Eligible missing strings",
+      "sourceCharacters": "Source characters (Unicode code points)",
+      "skippedExisting": "Existing translations skipped",
+      "ineligible": "Ineligible entries",
+      "translated": "Translated strings",
+      "failed": "Failed strings",
+      "approved": "Approved translations"
+    },
+    "billedCharacters": "Provider-reported billed characters: {{count}}",
+    "reviewRequired": "Needs review — machine translation"
   }
 }

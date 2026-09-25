@@ -8,6 +8,7 @@ export default defineConfig(
       "dist/**",
       "dist-cloudflare/**",
       ".astro-cloudflare/**",
+      ".astro-machine-test/**",
       ".wrangler/**",
       "worker-configuration.d.ts",
       ".astro/**",

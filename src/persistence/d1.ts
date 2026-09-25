@@ -58,7 +58,7 @@ export class D1ProjectRepository implements ProjectRepository {
         .bind(id),
       this.db
         .prepare(
-          "SELECT entryId,language,value,needsReview,createdAt,updatedAt,origin FROM translations WHERE projectId=? ORDER BY entryId,language",
+          "SELECT entryId,language,value,needsReview,createdAt,updatedAt,origin,originProvider,originModel FROM translations WHERE projectId=? ORDER BY entryId,language",
         )
         .bind(id),
     ]);

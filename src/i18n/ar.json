@@ -46,7 +46,16 @@
     "batchTooLarge": "اختر 20 ملفاً و10 ميغابايت إجمالاً كحد أقصى.",
     "baseFileRequired": "أضف ملفاً للغة الأساسية المختارة وأكّد لغته.",
     "stalePreview": "تغير المشروع. أعد تحميله وتحليل الملفات قبل التطبيق أو الاستعادة.",
-    "conflictPolicyRequired": "اختر كيفية حل تعارضات الترجمة."
+    "conflictPolicyRequired": "اختر كيفية حل تعارضات الترجمة.",
+    "machineNotConfigured": "الترجمة الآلية اختيارية. اطلب من مشغّل الخادم إعداد مفتاح DeepL الخاص به.",
+    "machineUnsupported": "لا يدعم مزوّد الترجمة هذا الزوج من اللغات.",
+    "machineInvalidResult": "النتيجة غير صالحة أو غيّرت العناصر النائبة المحمية. لم يُحفظ هذا الإدخال.",
+    "machineCredentials": "رفض DeepL بيانات الاعتماد. تواصل مع مشغّل الخادم.",
+    "machineRateLimit": "تم بلوغ حد طلبات DeepL. حاول لاحقاً.",
+    "machineQuota": "تم بلوغ حصة حساب DeepL.",
+    "machineUnavailable": "مزوّد الترجمة غير متاح. لم تُحفظ أي ترجمات.",
+    "machineRequestTooLarge": "يتجاوز النص المحمي حد طلب المزوّد. قلّل عدد النصوص أو طولها.",
+    "machineMalformedResponse": "أعاد المزوّد استجابة غير صالحة. لم تُحفظ أي ترجمات."
   },
   "baseLanguage": "اللغة الأساسية",
   "baseText": "نص اللغة الأساسية",
@@ -107,10 +116,11 @@
     "origin": "المصدر",
     "origins": {
       "manual": "يدوي",
-      "import": "استيراد"
+      "import": "استيراد",
+      "machine": "آلية"
     },
     "more": "تحميل أحداث أقدم",
-    "retention": "يُحتفظ بأحدث 100 إصدار لكل مشروع. ينشئ الاستيراد والاستعادة نقاط حفظ؛ لا ينشئ حفظ ترجمة منفردة إصداراً.",
+    "retention": "يُحتفظ بأحدث 100 إصدار لكل مشروع. ينشئ الاستيراد والترجمة الآلية والاستعادة نقاط حفظ؛ لا ينشئ الحفظ أو الاعتماد المنفرد إصداراً.",
     "revisionNumber": "الإصدار {{id}}",
     "beforeImport": "قبل الاستيراد",
     "afterImport": "بعد الاستيراد",
@@ -129,7 +139,44 @@
       "review.changed": "تغيرت حالة المراجعة",
       "base.imported": "تم استيراد ملف اللغة الأساسية",
       "batch.imported": "تم استيراد ملفات الترجمة",
-      "revision.restored": "تمت استعادة إصدار"
-    }
+      "revision.restored": "تمت استعادة إصدار",
+      "machine.translation.completed": "اكتملت الترجمة الآلية",
+      "translation.approved": "تم اعتماد الترجمة",
+      "translation.approval.bulk": "تم اعتماد الترجمات الآلية جماعياً"
+    },
+    "beforeMachineTranslation": "قبل الترجمة الآلية",
+    "afterMachineTranslation": "بعد الترجمة الآلية"
+  },
+  "machine": {
+    "title": "الترجمة الآلية",
+    "scope": "النصوص المطلوب ترجمتها",
+    "allMissing": "جميع النصوص غير المترجمة",
+    "provider": "المزوّد: {{provider}}",
+    "direction": "من {{source}} إلى {{target}}",
+    "translateMissing": "ترجمة النصوص الناقصة",
+    "warning": "هل تريد إرسال {{count}} نصوص ({{characters}} حرفاً من المصدر) إلى {{provider}} لترجمتها إلى {{target}}؟ تُحتسب التكلفة على حسابك لدى DeepL. ستُفقد التعديلات غير المحفوظة. قد تُحتسب تكلفة النتيجة القديمة دون حفظها.",
+    "confirm": "أؤكد إرسال هذه النصوص إلى المزوّد",
+    "cancel": "إلغاء",
+    "translateConfirm": "تأكيد الترجمة الآلية",
+    "working": "جارٍ الترجمة…",
+    "result": "تمت ترجمة: {{translated}} · تحتاج مراجعة: {{translated}} · فشل: {{failed}}",
+    "approveWarning": "راجعت هذه الترجمات الآلية وعددها {{count}} وأؤكد اعتمادها جميعاً. ستُفقد التعديلات غير المحفوظة.",
+    "approveAll": "اعتماد جميع الترجمات الآلية",
+    "approve": "اعتماد الترجمة",
+    "approveFor": "اعتماد الترجمة للمفتاح {{key}}",
+    "badge": "ترجمة آلية · {{provider}}",
+    "unknownProvider": "مزوّد غير معروف",
+    "counts": {
+      "requested": "النصوص المطلوبة",
+      "eligible": "النصوص الناقصة المؤهلة",
+      "sourceCharacters": "أحرف المصدر (نقاط Unicode)",
+      "skippedExisting": "الترجمات الموجودة المتجاوزة",
+      "ineligible": "الإدخالات غير المؤهلة",
+      "translated": "النصوص المترجمة",
+      "failed": "النصوص التي فشلت",
+      "approved": "الترجمات المعتمدة"
+    },
+    "billedCharacters": "الأحرف المفوترة حسب المزوّد: {{count}}",
+    "reviewRequired": "تحتاج مراجعة — ترجمة آلية"
   }
 }

@@ -1,3 +1,4 @@
+import { MachinePanel } from "./MachinePanel";
 import type { ImportPreview, ConflictPolicy } from "../application/imports";
 import { ImportPanel, ImportSummary } from "./ImportPanel";
 import { ProjectHistory } from "./ProjectHistory";
@@ -435,6 +436,22 @@ function Workspace() {
               {t("importHint")}
             </p>
           </section>
+          <MachinePanel
+            key={`${project.id}:${selectedLanguage}`}
+            project={project}
+            language={selectedLanguage}
+            busy={busy}
+            run={run}
+            onApplied={(updated) => {
+              setProject(updated);
+              setDrafts({});
+              setProjects((previous) =>
+                previous.map((item) =>
+                  item.id === updated.id ? updated : item,
+                ),
+              );
+            }}
+          />
           <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
             <p>{t("progress", languageProgress(project, selectedLanguage))}</p>
             <label className="flex items-center gap-2 text-sm">
@@ -477,6 +494,22 @@ function Workspace() {
                       }))
                     }
                     busy={busy}
+                    onApprove={() =>
+                      run(async () => {
+                        setProject(
+                          await request<ProjectDetail>(
+                            `/api/projects/${project.id}/machine`,
+                            {
+                              action: "approve",
+                              language: selectedLanguage,
+                              entryIds: [entry.id],
+                              expectedVersion: project.version,
+                              confirmed: true,
+                            },
+                          ),
+                        );
+                      })
+                    }
                     onSave={(value) =>
                       run(async () => {
                         setProject(
@@ -515,6 +548,7 @@ function Editor({
   onChange,
   busy,
   onSave,
+  onApprove,
 }: {
   entry: Entry;
   baseLanguage: string;
@@ -523,6 +557,7 @@ function Editor({
   onChange: (value: string) => void;
   busy: boolean;
   onSave: (value: string) => Promise<void>;
+  onApprove: () => Promise<void>;
 }) {
   const { t } = useTranslation();
   const translation = translationFor(entry, targetLanguage);
@@ -542,13 +577,23 @@ function Editor({
         <span className="text-sm text-muted-foreground">
           {t(
             translation.needsReview
-              ? "review"
+              ? translation.origin === "machine"
+                ? "machine.reviewRequired"
+                : "review"
               : translation.value.trim()
                 ? "translated"
                 : "untranslated",
           )}
         </span>
       </div>
+      {translation.origin === "machine" && (
+        <p className="mb-3 text-sm">
+          {t("machine.badge", {
+            provider:
+              translation.originProvider ?? t("machine.unknownProvider"),
+          })}
+        </p>
+      )}
       <div className="grid gap-5 md:grid-cols-2">
         <div className="min-w-0">
           <p className="mb-2 text-sm font-medium">{t("baseText")}</p>
@@ -573,7 +618,18 @@ function Editor({
           />
         </label>
       </div>
-      <div className="mt-4 flex justify-end">
+      <div className="mt-4 flex justify-end gap-3">
+        {translation.origin === "machine" && translation.needsReview && (
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={busy || value !== translation.value}
+            onClick={() => void onApprove()}
+            aria-label={t("machine.approveFor", { key: path })}
+          >
+            {t("machine.approve")}
+          </Button>
+        )}
         <Button
           type="submit"
           variant="outline"
