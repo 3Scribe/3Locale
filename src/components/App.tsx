@@ -1,3 +1,6 @@
+import type { ImportPreview, ConflictPolicy } from "../application/imports";
+import { ImportPanel, ImportSummary } from "./ImportPanel";
+import { ProjectHistory } from "./ProjectHistory";
 import { useEffect, useState, type SubmitEvent } from "react";
 import { I18nextProvider, useTranslation } from "react-i18next";
 import { createI18n } from "../i18n";
@@ -45,10 +48,15 @@ function Workspace() {
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [batchNotice, setBatchNotice] = useState<{
+    preview: ImportPreview;
+    policy: ConflictPolicy;
+  }>();
   const [missingOnly, setMissingOnly] = useState(false);
   const [file, setFile] = useState<File>();
   function open(project: ProjectDetail) {
     setProject(project);
+    setBatchNotice(undefined);
     setSelectedLanguage(
       project.languages.find((language) => language !== project.baseLanguage)!,
     );
@@ -76,6 +84,7 @@ function Workspace() {
     };
   }, []);
   async function run(action: () => Promise<void>) {
+    setBatchNotice(undefined);
     setBusy(true);
     setError("");
     setNotice("");
@@ -103,6 +112,21 @@ function Workspace() {
       open(created);
       setNotice("created");
     });
+  }
+  function imported(
+    value: ProjectDetail,
+    preview: ImportPreview,
+    policy: ConflictPolicy,
+  ) {
+    updated(value);
+    setBatchNotice({ preview, policy });
+  }
+  function updated(value: ProjectDetail) {
+    open(value);
+    setProjects((previous) => [
+      value,
+      ...previous.filter((item) => item.id !== value.id),
+    ]);
   }
   const targets =
     project?.languages.filter(
@@ -143,8 +167,16 @@ function Workspace() {
       <p role="status" className="mb-4 text-sm text-primary">
         {busy ? t("working") : notice ? t(notice) : ""}
       </p>
+      {batchNotice && (
+        <section className="my-5 rounded border border-input p-5" role="status">
+          <h2 className="font-semibold">{t("batch.complete")}</h2>
+          <ImportSummary summary={batchNotice.preview.summary} />
+          <p>{t(`batch.${batchNotice.policy}`)}</p>
+        </section>
+      )}
       {!project ? (
         <>
+          <ImportPanel disabled={busy} onApplied={imported} />
           <h1 className="text-4xl font-semibold tracking-tight">
             {t("title")}
           </h1>
@@ -247,6 +279,7 @@ function Workspace() {
             disabled={busy}
             onClick={() => {
               setProject(undefined);
+              setBatchNotice(undefined);
               setFile(undefined);
               setNotice("");
               setDrafts({});
@@ -287,6 +320,12 @@ function Workspace() {
               {t("export")}
             </Button>
           </div>
+          <ImportPanel disabled={busy} project={project} onApplied={imported} />
+          <ProjectHistory
+            key={project.version}
+            project={project}
+            onRestored={updated}
+          />
           <section className="my-6 space-y-4 rounded-xl border border-input bg-white p-5">
             <h2 className="text-lg font-semibold">{t("languages")}</h2>
             <ul className="space-y-2">

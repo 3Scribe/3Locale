@@ -259,5 +259,231 @@ test("project creation stays disabled before client hydration", async ({
     page.getByRole("button", { name: "Create project", exact: true }),
   ).toBeDisabled();
   await expect(page.getByLabel("Project name", { exact: true })).toBeDisabled();
+  await expect(
+    page.getByLabel("Imported project name", { exact: true }),
+  ).toBeDisabled();
+  await expect(page.getByLabel("Locale files", { exact: true })).toBeDisabled();
   await context.close();
+});
+
+for (const locale of ["en", "ar"] as const) {
+  test(`multi-file creation, explicit mappings, reconciliation, audit and ZIP (${locale})`, async ({
+    page,
+  }) => {
+    const ar = locale === "ar";
+    await page.goto(`/?lang=${locale}`);
+    const name = `Batch ${locale} ${Date.now()}`;
+    await page
+      .getByLabel(ar ? "اسم المشروع المستورد" : "Imported project name", {
+        exact: true,
+      })
+      .fill(name);
+    await page
+      .getByLabel(ar ? "ملفات الترجمة" : "Locale files", { exact: true })
+      .setInputFiles([
+        {
+          name: "messages.en-gb.json",
+          mimeType: "application/json",
+          buffer: Buffer.from(
+            JSON.stringify({ "a.b": "Literal", a: { b: "Nested" } }),
+          ),
+        },
+        {
+          name: "fr.json",
+          mimeType: "application/json",
+          buffer: Buffer.from(
+            JSON.stringify({
+              "a.b": "Littéral",
+              a: { b: "Imbriqué" },
+              orphan: "Skip",
+            }),
+          ),
+        },
+        {
+          name: "ar.json",
+          mimeType: "application/json",
+          buffer: Buffer.from(
+            JSON.stringify({ "a.b": "حرفي", a: { b: "متداخل" } }),
+          ),
+        },
+      ]);
+    await page
+      .getByLabel(
+        ar
+          ? "اللغة الأساسية للمشروع المستورد"
+          : "Base Language for imported project",
+        { exact: true },
+      )
+      .fill("en-GB");
+    const analyse = page.getByRole("button", {
+      name: ar ? "تحليل الملفات" : "Analyse files",
+      exact: true,
+    });
+    await expect(analyse).toBeDisabled();
+    for (const file of ["messages.en-gb.json", "fr.json", "ar.json"])
+      await page
+        .getByLabel(ar ? `تأكيد لغة ${file}` : `Confirm language for ${file}`, {
+          exact: true,
+        })
+        .check();
+    await analyse.click();
+    const preview = page.getByLabel(
+      ar ? "معاينة الاستيراد" : "Import preview",
+      { exact: true },
+    );
+    await expect(preview).toBeVisible();
+    await preview
+      .getByText(
+        ar ? "ترجمات غير مطابقة سيتم تخطيها" : "Unmatched translations to skip",
+        { exact: true },
+      )
+      .click();
+    await expect(preview.getByText(/orphan/)).toBeVisible();
+    const create = page.getByRole("button", {
+      name: ar ? "إنشاء المشروع والاستيراد" : "Create project and import",
+      exact: true,
+    });
+    await expect(create).toBeDisabled();
+    await page
+      .getByRole("combobox", {
+        name: ar ? "سياسة التعارض" : "Conflict policy",
+        exact: true,
+      })
+      .selectOption("keepExisting");
+    await create.click();
+    await expect(
+      page.getByRole("heading", { name, exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", {
+        name: ar ? "اكتمل الاستيراد" : "Import complete",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByLabel(ar ? 'ترجمة "a.b"' : 'Translation for "a.b"', {
+        exact: true,
+      }),
+    ).toHaveValue("Littéral");
+    await page
+      .getByRole("region", {
+        name: ar ? "سجل المشروع والتصدير" : "Project history and export",
+        exact: true,
+      })
+      .getByRole("button", { name: ar ? "سجل النشاط" : "Audit", exact: true })
+      .click();
+    await expect(
+      page.getByRole("heading", {
+        name: ar ? "تم استيراد ملفات الترجمة" : "Locale files imported",
+        exact: true,
+      }),
+    ).toBeVisible();
+    const pending = page.waitForEvent("download");
+    await page
+      .getByRole("button", {
+        name: ar
+          ? "تصدير جميع اللغات الهدف (ZIP)"
+          : "Export all target languages (ZIP)",
+        exact: true,
+      })
+      .click();
+    expect((await pending).suggestedFilename()).toBe("translations.zip");
+    await expect(page.locator("html")).toHaveAttribute(
+      "dir",
+      ar ? "rtl" : "ltr",
+    );
+  });
+}
+
+test("batch API rejects invalid mappings and stale writes, exposes audit, and restores a checkpoint", async ({
+  request,
+}) => {
+  const created = await request.post("/api/projects", {
+    data: { name: "Batch API", baseLanguage: "en", targetLanguages: ["fr"] },
+  });
+  const project = await created.json();
+  const endpoint = `/api/projects/${project.id}/imports`;
+  const files = [
+    { name: "en.json", language: "en", confirmed: true, text: '{"a":"A"}' },
+    { name: "fr.json", language: "fr", confirmed: true, text: '{"a":"Un"}' },
+  ];
+  expect(
+    (
+      await request.post(endpoint, {
+        data: { action: "preview", files: [{ ...files[0], confirmed: false }] },
+      })
+    ).status(),
+  ).toBe(400);
+  const preview = await (
+    await request.post(endpoint, { data: { action: "preview", files } })
+  ).json();
+  expect(preview.summary.baseAdded).toBe(1);
+  expect((await request.get(`/api/projects/${project.id}`)).status()).toBe(200);
+  expect(
+    (
+      await request.post(endpoint, {
+        data: { action: "apply", files, expectedVersion: preview.version },
+      })
+    ).status(),
+  ).toBe(400);
+  const applied = await (
+    await request.post(endpoint, {
+      data: {
+        action: "apply",
+        files,
+        policy: "keepExisting",
+        expectedVersion: preview.version,
+      },
+    })
+  ).json();
+  expect(applied.project.entries).toHaveLength(1);
+  expect(
+    (
+      await request.post(endpoint, {
+        data: {
+          action: "apply",
+          files,
+          policy: "useImported",
+          expectedVersion: preview.version,
+        },
+      })
+    ).status(),
+  ).toBe(409);
+  const events = await (await request.get(`${endpoint}?view=audit`)).json();
+  expect(events[0].kind).toBe("batch.imported");
+  const revisions = await (
+    await request.get(`${endpoint}?view=revisions`)
+  ).json();
+  const before = revisions.find(
+    (revision: { kind: string }) => revision.kind === "beforeImport",
+  );
+  expect(
+    (
+      await request.post(endpoint, {
+        data: {
+          action: "restore",
+          revisionId: before.id,
+          expectedVersion: applied.project.version,
+          confirmed: false,
+        },
+      })
+    ).status(),
+  ).toBe(400);
+  const restored = await (
+    await request.post(endpoint, {
+      data: {
+        action: "restore",
+        revisionId: before.id,
+        expectedVersion: applied.project.version,
+        confirmed: true,
+      },
+    })
+  ).json();
+  expect(restored.entries).toEqual([]);
+  expect(
+    (await (await request.get(`${endpoint}?view=audit`)).json())[0].kind,
+  ).toBe("revision.restored");
+  expect(
+    (await request.get(`${endpoint}?view=audit&before=invalid`)).status(),
+  ).toBe(400);
 });

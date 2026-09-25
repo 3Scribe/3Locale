@@ -15,3 +15,5 @@ This file lists the development software, languages, libraries, and frameworks t
 - Browser/end-to-end tests: Playwright
 
 New foundational technologies should not be introduced without an explicit architectural reason. Small supporting libraries may be added when they solve a clear requirement and fit the existing architecture.
+
+Milestone 3 uses `fflate` as a small supporting ZIP library behind the archive-provider interface for all-target JSON export. It does not become an application/domain dependency. SQLite migrations remain forward-only, and persistence/migration integration tests use real temporary databases.

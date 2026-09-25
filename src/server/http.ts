@@ -35,7 +35,7 @@ export const actionInput = z.discriminatedUnion("action", [
     })
     .strict(),
 ]);
-export async function readJson(request: Request) {
+export async function readJson(request: Request, maximumBytes = 2_000_000) {
   if (
     request.headers.get("content-type")?.split(";")[0].trim() !==
     "application/json"
@@ -54,7 +54,7 @@ export async function readJson(request: Request) {
     const { value, done } = await reader.read();
     if (done) break;
     length += value.length;
-    if (length > 2_000_000) {
+    if (length > maximumBytes) {
       await reader.cancel();
       throw new AppError("tooLarge", 413);
     }
