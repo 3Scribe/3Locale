@@ -1,3 +1,4 @@
+import { housekeepingContract } from "./contracts/housekeeping";
 import { machineContract } from "./contracts/machine";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
@@ -24,3 +25,5 @@ async function createFixture() {
 }
 repositoryContract("SQLite", createFixture);
 machineContract("SQLite", createFixture);
+
+housekeepingContract("SQLite", createFixture);

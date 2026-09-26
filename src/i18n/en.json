@@ -55,7 +55,9 @@
     "machineQuota": "The DeepL account quota has been reached.",
     "machineUnavailable": "The translation provider is unavailable. No translations were saved.",
     "machineRequestTooLarge": "The protected text exceeds the provider request limit. Translate fewer or shorter strings.",
-    "machineMalformedResponse": "The provider returned an invalid response. No translations were saved."
+    "machineMalformedResponse": "The provider returned an invalid response. No translations were saved.",
+    "confirmationRequired": "Confirm the action exactly as requested.",
+    "lastTargetLanguage": "Keep at least one target language. Add another target before removing this one."
   },
   "baseLanguage": "Base Language",
   "baseText": "Base Language text",
@@ -120,7 +122,7 @@
       "machine": "Machine"
     },
     "more": "Load older events",
-    "retention": "The most recent 100 revisions are retained per project. Imports, automatic translations and restorations create checkpoints; individual saves and approvals do not.",
+    "retention": "The newest 100 revisions are retained. Imports, automatic translations, language removals and restorations create checkpoints; individual saves, approvals and renames do not.",
     "revisionNumber": "Revision {{id}}",
     "beforeImport": "Before import",
     "afterImport": "After import",
@@ -142,10 +144,14 @@
       "revision.restored": "Revision restored",
       "machine.translation.completed": "Automatic translation completed",
       "translation.approved": "Translation approved",
-      "translation.approval.bulk": "Machine translations approved in bulk"
+      "translation.approval.bulk": "Machine translations approved in bulk",
+      "project.renamed": "Project renamed",
+      "language.removed": "Language removed"
     },
     "beforeMachineTranslation": "Before automatic translation",
-    "afterMachineTranslation": "After automatic translation"
+    "afterMachineTranslation": "After automatic translation",
+    "beforeLanguageRemoval": "Before language removal",
+    "afterLanguageRemoval": "After language removal"
   },
   "machine": {
     "title": "Automatic translation",
@@ -178,5 +184,57 @@
     },
     "billedCharacters": "Provider-reported billed characters: {{count}}",
     "reviewRequired": "Needs review — machine translation"
+  },
+  "setup": {
+    "title": "Instance setup",
+    "failed": "Could not read instance status. Check the server and try again.",
+    "storage": {
+      "available": "Storage is available. You can create projects and translate manually.",
+      "unavailable": "Storage is unavailable or needs an upgrade. Check database access and apply the deployment migrations, then reload."
+    },
+    "security": "No sign-in protection yet. Restrict access before sharing this instance; anyone with access can change or delete projects and use your translation account.",
+    "reload": "Reload after setup",
+    "instructions": "Provider setup and connection check",
+    "optional": "Automatic translation is optional. Supply your own provider key in the deployment settings, never in this browser. Your provider bills your account.",
+    "node": "Set the server environment variable THREELOCALE_DEEPL_API_KEY using your host’s secret settings, then restart the server.",
+    "cloudflare": "Add the Worker secret THREELOCALE_DEEPL_API_KEY in Cloudflare or use the command below. For local development, use the ignored .dev.vars file.",
+    "checkHint": "Check credentials and available quota without sending project text. This contacts the provider only when you press the button. A successful check does not guarantee every language pair or later request will succeed.",
+    "check": "Check provider connection",
+    "guide": "Open setup and deployment guide",
+    "checked": "Last checked: {{time}}",
+    "states": {
+      "missing": "Not configured — manual translation is available.",
+      "unverified": "Key supplied — connection not checked.",
+      "ready": "Connection verified; quota is available.",
+      "machineCredentials": "Key rejected. Replace the server-side API key and check again.",
+      "machineQuota": "Usage limit reached. Review your provider account limits and check again.",
+      "machineRateLimit": "Provider is rate limiting requests. Wait before checking again.",
+      "machineUnavailable": "Provider could not be reached. Check connectivity and try again.",
+      "machineMalformedResponse": "Provider returned an unexpected response. Try again later."
+    },
+    "command": "npx wrangler secret put THREELOCALE_DEEPL_API_KEY"
+  },
+  "manage": {
+    "title": "Project settings",
+    "name": "Project name",
+    "rename": "Rename project",
+    "saved": "Project settings saved.",
+    "deleted": "Project deleted, including its history.",
+    "language": "Language to remove",
+    "choose": "Choose a target language",
+    "remove": "Remove language",
+    "removeHint": "Removal deletes this language’s current translations and discards its unsaved edits. Other languages are preserved. Audit and recovery revisions retain historical values; restore a revision to recover the language until it is pruned. The Base Language and final target cannot be removed.",
+    "removeConfirm": "I confirm removing {{language}} and its current translations",
+    "deleteHint": "Permanently delete this project, all languages, translations, audit history and recovery revisions. There is no in-app undo. Export or back up valuable data first.",
+    "typeName": "Type {{name}} to confirm permanent deletion",
+    "delete": "Delete project permanently",
+    "reload": "Reload project (discard unsaved edits)"
+  },
+  "draft": {
+    "title": "Need an incomplete export?",
+    "hint": "Download a clearly labelled draft ZIP for the selected language. Only reviewed, valid translations are included; missing, unreviewed and invalid values become empty strings. The manifest lists every incomplete path. There is no source-language fallback. This is not a production export; saved values only, without unsaved edits.",
+    "confirm": "I understand that {{language}} is a draft and may contain empty values",
+    "download": "Download draft ZIP",
+    "downloaded": "Draft ZIP downloaded. Review its manifest before using it."
   }
 }

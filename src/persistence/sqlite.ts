@@ -67,6 +67,34 @@ export class SqliteProjectRepository implements ProjectRepository {
       entries,
     };
   }
+  async check() {
+    this.db
+      .prepare("SELECT originProvider, originModel FROM translations LIMIT 0")
+      .all();
+  }
+  async delete(id: string, expectedVersion: number) {
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const row = this.db
+        .prepare("SELECT version FROM projects WHERE id=?")
+        .get(id) as { version: number } | undefined;
+      if (row?.version !== expectedVersion)
+        throw new AppError("stalePreview", 409);
+      for (const table of [
+        "translations",
+        "resource_entries",
+        "project_languages",
+        "audit_events",
+        "revisions",
+      ])
+        this.db.prepare(`DELETE FROM ${table} WHERE projectId=?`).run(id);
+      this.db.prepare("DELETE FROM projects WHERE id=?").run(id);
+      this.db.exec("COMMIT");
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      throw error;
+    }
+  }
   async list(): Promise<Project[]> {
     const rows = this.db
       .prepare("SELECT id FROM projects ORDER BY rowid DESC")

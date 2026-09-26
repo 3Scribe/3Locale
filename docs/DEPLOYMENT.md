@@ -130,3 +130,34 @@ Large jobs must fit the host's request, CPU, memory and subrequest budgets. No q
 - [DeepL supported languages](https://developers.deepl.com/docs/getting-started/supported-languages)
 - [DeepL official SDK language catalogue](https://github.com/DeepLcom/deepl-node/blob/main/src/types.ts)
 - [Worker secret configuration](https://developers.cloudflare.com/workers/configuration/secrets/)
+
+## Upgrading an existing Cloudflare copy
+
+The deployment button creates a copy in your account. It does not automatically keep that copy synchronized with upstream. Treat code upgrades separately from the existing Worker, D1 database and secrets. Do not press the deployment button again to upgrade an instance containing data.
+
+1. Record the deployed commit, Worker name, Cloudflare account, D1 database name/ID, routes and build settings. Verify the actual database binding in the dashboard; a template's omitted ID is for initial provisioning, not a reason to create a replacement database during an upgrade. Keep the binding named `THREELOCALE_DB`.
+2. Restrict access during maintenance. Back up the existing remote D1 database to a private location outside the repository, and verify that a restore is possible before proceeding. For example, from the existing configured checkout:
+
+   ```sh
+   npx wrangler d1 export THREELOCALE_DB --remote --output ../three-locale-backup.sql
+   ```
+
+   Review [D1 export](https://developers.cloudflare.com/d1/wrangler-commands/#d1-export) and [Time Travel recovery](https://developers.cloudflare.com/d1/reference/time-travel/) for your account. A locale JSON/ZIP export is useful but is not a full backup of audit, revisions or provenance. Never commit a database dump.
+
+3. Review the upstream changes and migration notes. Use a reviewed release tag/commit when available; `main` is the current pre-release development branch. If your copy shares upstream Git history, add `https://github.com/3Scribe/3Locale.git` as an `upstream` remote, fetch it, and merge the chosen ref into an upgrade branch in your own repository. Resolve configuration differences deliberately and review a PR before triggering your deployment branch.
+4. If the copy has unrelated history, or after the planned public repository reset, use a **fresh checkout in a separate directory** at the chosen upstream commit. Reapply only your deployment settings (Worker name, account, routes and the existing D1 ID) to the new Wrangler configuration. Retain `migrations_dir`, bindings and new runtime settings from upstream. Reconnect Workers Builds to your reviewed code branch/repository if needed. Do not overwrite the new source tree with an old complete config or copy old build output/dependencies. This route does not depend on preserving Git history.
+5. Ensure the new config targets the **same Worker and existing database ID**. Keep secrets on that Worker; do not copy secret values into Git or Wrangler `vars`. Preserve any local ignored development secrets separately. Pin Node 24 and run `npm ci`, the documented checks and `npm run build:cloudflare` before deployment. Retain the original checkout/commit for diagnosis.
+6. Run `npm run deploy` from the reviewed/configured checkout, or merge to the Workers Builds branch with that deploy command. It builds, applies only pending D1 migrations and deploys the generated Worker config. Review Wrangler's target account/database and pending migrations; stop on an unexpected target or migration failure. Do not delete migration tracking or rerun baseline SQL manually.
+7. Open the instance, confirm storage availability, load an existing project, inspect translations/history and exercise export. If using DeepL, run the explicit connection check. Verify the existing secret, custom routes and deployment-layer access protection still apply before reopening access.
+
+Worker code rollback does not undo database migrations. Prefer a forward correction; only roll code back when compatible with the current schema. Database recovery can discard writes after the backup/bookmark and requires maintenance coordination. Do not restore an old dump over a live database casually.
+
+Milestone 6 adds no schema migration: SQLite remains at version 4 and D1 at migration 0002. Existing installs must still apply earlier pending migrations. Renames and language removal use normal version-checked transactions; whole-project deletion removes all owned current data, audit, revisions and D1 revision chunks atomically. Deleting a project does not erase external backups or D1 Time Travel retention. Language removal retains historical data in audit/recovery revisions until normal retention removes checkpoints. It is housekeeping, not a data-erasure feature.
+
+## Reading instance and provider status
+
+The setup panel checks storage access against the current translation schema without writing test data. “Storage available” means the schema can be read; it cannot guarantee future writes will fit disk/quota limits. If unavailable, check the server's database binding/path and pending migrations, then reload. A missing DeepL key does not block manual workflows.
+
+A supplied key is initially **unverified**. The explicit **Check provider connection** action calls DeepL's [usage endpoint](https://developers.deepl.com/api-reference/usage-and-quota/check-usage-and-limits) without sending project content or performing a translation. It checks credential acceptance and account/key character limits. Success is a point-in-time check, not a promise that every language pair or later request will succeed. Results are not stored, and refresh returns to unverified. Invalid keys, exhausted quota, rate limits and connectivity failures have safe, actionable feedback. Changes to server credentials require the normal host restart/secret update followed by reload/check.
+
+Provider checks require network egress to DeepL. Project loading, import, previews, export and housekeeping still never trigger provider requests. No credential editor or browser-managed secret store is introduced before authentication.

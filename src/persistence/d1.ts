@@ -91,6 +91,46 @@ export class D1ProjectRepository implements ProjectRepository {
       })),
     };
   }
+  async check() {
+    await this.db
+      .prepare("SELECT originProvider, originModel FROM translations LIMIT 0")
+      .all();
+  }
+  async delete(id: string, expectedVersion: number) {
+    const statements = [
+      this.db
+        .prepare(
+          "INSERT INTO commit_guard (projectId,valid) VALUES (?, CASE WHEN EXISTS (SELECT 1 FROM projects WHERE id=? AND version=?) THEN 1 ELSE 0 END)",
+        )
+        .bind(id, id, expectedVersion),
+    ];
+    for (const table of [
+      "translations",
+      "resource_entries",
+      "project_languages",
+      "audit_events",
+      "revisions",
+    ])
+      statements.push(
+        this.db.prepare("DELETE FROM " + table + " WHERE projectId=?").bind(id),
+      );
+    statements.push(
+      this.db.prepare("DELETE FROM projects WHERE id=?").bind(id),
+    );
+    statements.push(
+      this.db.prepare("DELETE FROM commit_guard WHERE projectId=?").bind(id),
+    );
+    try {
+      await this.db.batch(statements);
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.includes("three_locale_version_guard")
+      )
+        throw new AppError("stalePreview", 409);
+      throw error;
+    }
+  }
   async commit(change: ProjectCommit): Promise<void> {
     const { project, previous, expectedVersion } = change;
     if (

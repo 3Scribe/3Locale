@@ -1,3 +1,5 @@
+import { InstancePanel } from "./InstancePanel";
+import { ProjectSettings, DraftExport } from "./ProjectSettings";
 import { MachinePanel } from "./MachinePanel";
 import type { ImportPreview, ConflictPolicy } from "../application/imports";
 import { ImportPanel, ImportSummary } from "./ImportPanel";
@@ -168,6 +170,22 @@ function Workspace() {
       <p role="status" className="mb-4 text-sm text-primary">
         {busy ? t("working") : notice ? t(notice) : ""}
       </p>
+      <InstancePanel />
+      {error === "stalePreview" && project && (
+        <Button
+          variant="outline"
+          disabled={busy}
+          onClick={() =>
+            void run(async () =>
+              updated(
+                await request<ProjectDetail>(`/api/projects/${project.id}`),
+              ),
+            )
+          }
+        >
+          {t("manage.reload")}
+        </Button>
+      )}
       {batchNotice && (
         <section className="my-5 rounded border border-input p-5" role="status">
           <h2 className="font-semibold">{t("batch.complete")}</h2>
@@ -324,6 +342,45 @@ function Workspace() {
             </Button>
           </div>
           <ImportPanel disabled={busy} project={project} onApplied={imported} />
+          <DraftExport
+            key={`${project.id}:${selectedLanguage}:${project.version}`}
+            project={project}
+            language={selectedLanguage}
+            busy={busy}
+            run={run}
+          />
+          <ProjectSettings
+            key={`${project.id}:${project.version}`}
+            project={project}
+            busy={busy}
+            run={run}
+            onChanged={(value) => {
+              setProject(value);
+              setProjects((items) =>
+                items.map((item) => (item.id === value.id ? value : item)),
+              );
+              if (!value.languages.includes(selectedLanguage))
+                setSelectedLanguage(
+                  value.languages.find((item) => item !== value.baseLanguage)!,
+                );
+              setDrafts((items) =>
+                Object.fromEntries(
+                  Object.entries(items).filter(([key]) =>
+                    value.languages.includes(key.split(":")[0]),
+                  ),
+                ),
+              );
+              setNotice("manage.saved");
+            }}
+            onDeleted={() => {
+              setProjects((items) =>
+                items.filter((item) => item.id !== project.id),
+              );
+              setProject(undefined);
+              setDrafts({});
+              setNotice("manage.deleted");
+            }}
+          />
           <ProjectHistory
             key={project.version}
             project={project}

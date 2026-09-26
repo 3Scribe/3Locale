@@ -89,7 +89,7 @@ export async function handle(action: () => Response | Promise<Response>) {
       return json({ error: "invalidRequest" }, 400);
     if (error instanceof AppError)
       return json({ error: error.code }, error.status);
-    console.error("Request failed", error);
+    console.error("Request failed unexpectedly");
     return json({ error: "unexpected" }, 500);
   }
 }

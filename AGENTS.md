@@ -149,7 +149,7 @@ The core application must not depend directly on Google, Microsoft, DeepL, an LL
 
 Machine-generated translations require review and retain provider/model provenance. Approval of unchanged text preserves provenance; manual replacement clears provider/model metadata. Base Language changes preserve provenance while requiring review again.
 
-Translation previews and capability checks must remain offline. Only explicitly confirmed translation actions may invoke a provider. Recompute eligibility server-side, shield placeholders before sending, validate restored output, and enforce the project version both around external calls and at atomic persistence. Do not log provider credentials or raw provider responses. Test providers belong only in test composition, never production configuration.
+Translation previews and capability checks must remain offline. Only explicitly confirmed translation actions may send project text to a provider. An explicit configuration check may contact a provider without sending project text; never trigger it from page loads or previews. Recompute eligibility server-side, shield placeholders before sending, validate restored output, and enforce the project version both around external calls and at atomic persistence. Do not log provider credentials or raw provider responses. Test providers belong only in test composition, never production configuration.
 
 # Environment and Secrets
 
@@ -200,3 +200,7 @@ Import plans must remain read-only. Apply must check the analysed project versio
 # Multiple Runtime Validation
 
 Run the shared repository contract on both SQLite and real local D1. Validate both builds and the focused built-Worker smoke test as well as existing Playwright coverage. D1 commits must atomically guard the expected version, state, audit, checkpoints and retention in one batch. Never substitute a read-then-write version check or whole-project rewrite for incremental D1 writes. Keep released SQLite and D1 migrations forward-only in their separate histories. Deployment instructions belong in `docs/DEPLOYMENT.md`.
+
+# Housekeeping and Draft Exports
+
+Deletion must use the database's authoritative version guard and atomically remove all owned rows/history. Language removal preserves the Base Language and at least one target, with recovery checkpoints; history may retain removed values. Restoration changes localisation state, not the current project name. Keep strict production exports unchanged. Draft exports must be explicitly confirmed, clearly named and accompanied by a manifest identifying incomplete paths; never silently fall back to source text.

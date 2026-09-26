@@ -76,6 +76,8 @@ export interface ProjectCommit {
   revisionLimit: number;
 }
 export interface ProjectRepository {
+  check(): Promise<void>;
+  delete(id: string, expectedVersion: number): Promise<void>;
   list(): Promise<Project[]>;
   get(id: string): Promise<ProjectDetail | undefined>;
   commit(change: ProjectCommit): Promise<void>;

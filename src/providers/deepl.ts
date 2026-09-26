@@ -157,6 +157,55 @@ export class DeepLProvider implements TranslationProvider {
     this.key = key?.trim();
     this.configured = Boolean(this.key);
   }
+  async checkConfiguration() {
+    if (!this.configured) throw new AppError("machineNotConfigured", 503);
+    try {
+      const response = await this.send(
+        `https://${this.key!.endsWith(":fx") ? "api-free" : "api"}.deepl.com/v2/usage`,
+        {
+          headers: { Authorization: `DeepL-Auth-Key ${this.key}` },
+          signal: AbortSignal.timeout(10_000),
+          redirect: "error",
+        },
+      );
+      if (!response.ok) {
+        await response.body?.cancel();
+        throw new AppError(
+          response.status === 403 || response.status === 401
+            ? "machineCredentials"
+            : response.status === 456
+              ? "machineQuota"
+              : response.status === 429
+                ? "machineRateLimit"
+                : "machineUnavailable",
+          502,
+        );
+      }
+      const count = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
+      const data = z
+        .object({
+          character_count: count,
+          character_limit: count,
+          api_key_character_count: count.optional(),
+          api_key_character_limit: count.optional(),
+        })
+        .safeParse(await readResponse(response));
+      if (!data.success) throw new AppError("machineMalformedResponse", 502);
+      const usage = data.data;
+      if (
+        usage.character_count >= usage.character_limit ||
+        (usage.api_key_character_count !== undefined &&
+          usage.api_key_character_limit !== undefined &&
+          usage.api_key_character_count >= usage.api_key_character_limit)
+      )
+        throw new AppError("machineQuota", 502);
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      if (error instanceof SyntaxError)
+        throw new AppError("machineMalformedResponse", 502);
+      throw new AppError("machineUnavailable", 502);
+    }
+  }
   supports(source: string, target: string) {
     return Boolean(deeplLanguage(source, false) && deeplLanguage(target, true));
   }
@@ -218,7 +267,7 @@ export class DeepLProvider implements TranslationProvider {
       if (!response.ok) {
         await response.body?.cancel();
         throw new AppError(
-          response.status === 403
+          response.status === 403 || response.status === 401
             ? "machineCredentials"
             : response.status === 429
               ? "machineRateLimit"

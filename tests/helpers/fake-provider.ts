@@ -8,6 +8,7 @@ export class FakeTranslationProvider implements TranslationProvider {
   readonly displayName = "Test translator";
   configured = true;
   calls: TranslationRequest[] = [];
+  async checkConfiguration() {}
   supports(source: string, target: string) {
     return source.startsWith("en") && ["fr", "ar", "de"].includes(target);
   }

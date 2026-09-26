@@ -115,5 +115,52 @@ test("built Worker serves hydrated RTL UI and persists import, edit, export and 
   await expect(
     page.getByRole("heading", { name: "Worker smoke", exact: true }),
   ).toBeVisible();
+  expect(await (await request.get("/api/instance")).json()).toMatchObject({
+    storage: "available",
+    runtime: "cloudflare",
+    provider: { state: "missing" },
+  });
+  const saved = (await (await request.get(endpoint)).json()) as ProjectDetail;
+  const renamed = await request.post(endpoint + "/manage", {
+    data: {
+      action: "rename",
+      name: "Upgraded Worker",
+      expectedVersion: saved.version,
+    },
+  });
+  expect(renamed.ok()).toBe(true);
+  const renamedProject = (await renamed.json()) as ProjectDetail;
+  const removed = await request.post(endpoint + "/manage", {
+    data: {
+      action: "removeLanguage",
+      language: "ar",
+      confirmed: true,
+      expectedVersion: renamedProject.version,
+    },
+  });
+  expect(removed.ok()).toBe(true);
+  const remaining = (await removed.json()) as ProjectDetail;
+  const draft = await request.post(endpoint + "/manage", {
+    data: {
+      action: "exportDraft",
+      language: "fr",
+      confirmed: true,
+      expectedVersion: remaining.version,
+    },
+  });
+  expect(draft.ok()).toBe(true);
+  expect(draft.headers()["content-disposition"]).toContain("fr.draft.zip");
+  expect(
+    (
+      await request.post(endpoint + "/manage", {
+        data: {
+          action: "delete",
+          confirmedName: "Upgraded Worker",
+          expectedVersion: remaining.version,
+        },
+      })
+    ).ok(),
+  ).toBe(true);
+  expect((await request.get(endpoint)).status()).toBe(404);
   expect(errors).toEqual([]);
 });

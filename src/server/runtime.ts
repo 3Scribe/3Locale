@@ -1,3 +1,4 @@
+import { InstanceService } from "../application/instance";
 import { MachineTranslationService } from "../application/machine-translation";
 import { DeepLProvider } from "../providers/deepl";
 import { zipArchive } from "../providers/zip";
@@ -31,5 +32,16 @@ export function machineTranslations() {
     repository,
     jsonResource,
     new DeepLProvider(process.env.THREELOCALE_DEEPL_API_KEY),
+  );
+}
+
+export function instance() {
+  return new InstanceService(
+    () => {
+      projects();
+      return repository;
+    },
+    new DeepLProvider(process.env.THREELOCALE_DEEPL_API_KEY),
+    "node",
   );
 }
