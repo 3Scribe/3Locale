@@ -19,7 +19,9 @@ it("upgrades baseline D1 provenance without changing historical translations", a
     const before = await fixture.query(
       "SELECT * FROM translations ORDER BY language",
     );
+    await expect(fixture.repository.check()).rejects.toThrow();
     await fixture.applyMigration("0002_machine_provenance.sql");
+    await expect(fixture.repository.check()).resolves.toBeUndefined();
     expect(
       await fixture.query("SELECT * FROM translations ORDER BY language"),
     ).toEqual(

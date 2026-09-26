@@ -108,7 +108,12 @@ export function MachinePanel({
             ))}
           </dl>
           {!plan.configured ? (
-            <p>{t("errors.machineNotConfigured")}</p>
+            <p>
+              <span>{t("errors.machineNotConfigured")}</span>{" "}
+              <a href="#instance-setup" className="underline">
+                {t("setup.title")}
+              </a>
+            </p>
           ) : !plan.supported ? (
             <p>{t("errors.machineUnsupported")}</p>
           ) : (

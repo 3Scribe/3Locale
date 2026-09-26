@@ -221,3 +221,27 @@ test("HTTP validates explicit confirmation and selection without exposing provid
   expect(body).toContain("machine.translation.completed");
   expect(body).not.toContain("API_KEY");
 });
+
+test("explicit setup check verifies the test provider without translating", async ({
+  page,
+  request,
+}) => {
+  const status = await (await request.get("/api/instance")).json();
+  expect(status.provider.state).toBe("unverified");
+  await page.goto("/");
+  await page
+    .getByText("Provider setup and connection check", { exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Check provider connection", exact: true })
+    .click();
+  await expect(
+    page.getByText(
+      "Provider: Test translator · Connection verified; quota is available.",
+      { exact: true },
+    ),
+  ).toBeVisible();
+  expect(
+    (await (await request.get("/api/instance")).json()).provider.state,
+  ).toBe("unverified");
+});

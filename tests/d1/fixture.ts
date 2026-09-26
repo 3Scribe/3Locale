@@ -66,6 +66,8 @@ export default {async fetch(request,env) {
     return result.value;
   }
   const repository: ProjectRepository = {
+    check: () => invoke("check", []),
+    delete: (id, version) => invoke("delete", [id, version]),
     list: () => invoke("list", []),
     get: (id) => invoke("get", [id]),
     commit: (change) => invoke("commit", [change]),

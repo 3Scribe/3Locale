@@ -65,7 +65,7 @@ Browser tests run their own server on port 4322 with a separate `data/e2e.db`. D
 - Detect missing or altered `{name}` and `{{name}}` placeholders.
 - Localised English/Arabic UI with logical layout and RTL coverage.
 
-Imports are limited to 1 MB of UTF-8, 5,000 string leaves per file, 32 path segments, 500 characters per segment, and 20,000 characters per value. Projects support up to 100 languages including the Base Language. Arrays, non-string leaves, empty objects (including the root), comments, duplicate keys at any level, and trailing commas are rejected. Paths are segment arrays: `["account.name"]` and `["account", "name"]` remain distinct. The editor displays quoted segments separated by `›`. JSON property order and whitespace are not preserved; structure, keys, and values are. Empty translations count as untranslated. Each exported language must have nonblank values with matching placeholders and no pending review for all retained entries. Absent entries are retained. A reimport that would make a path both a string and an object is rejected transactionally. Base Language switching and destructive deletion are not implemented.
+Imports are limited to 1 MB of UTF-8, 5,000 string leaves per file, 32 path segments, 500 characters per segment, and 20,000 characters per value. Projects support up to 100 languages including the Base Language. Arrays, non-string leaves, empty objects (including the root), comments, duplicate keys at any level, and trailing commas are rejected. Paths are segment arrays: `["account.name"]` and `["account", "name"]` remain distinct. The editor displays quoted segments separated by `›`. JSON property order and whitespace are not preserved; structure, keys, and values are. Empty translations count as untranslated. Each exported language must have nonblank values with matching placeholders and no pending review for all retained entries. Absent entries are retained. A reimport that would make a path both a string and an object is rejected transactionally. Base Language switching is not implemented. Project settings support confirmed project deletion and target-language removal.
 
 The format treats values as opaque text except for simple brace placeholders. It does not interpret ICU messages or i18next plural semantics. Authentication, collaboration and additional formats are future work.
 
@@ -93,7 +93,7 @@ Applying commits languages, values, metadata, audit events, and revisions togeth
 
 Projects, language records, entries, and persisted translations have ISO UTC lifecycle timestamps. Unchanged reads/imported values do not advance entity timestamps. Translation origins are `manual`, `import` or `machine`, with nullable provider/model metadata. Migration 3 preserves Milestone 2 state, timestamps historical entities once at migration time, and labels historical base values as imported and target values as manual (the only Milestone 2 write paths). It does not invent historical audit events or checkpoints. Released migrations 1 and 2 remain unchanged.
 
-Current limits: nested string-only JSON, a batch-wide conflict policy, full snapshots rather than incremental revisions, no audit search, and no Base Language switching or deletion workflow. SQLite commits replace the bounded project localisation snapshot inside a transaction; D1 uses incremental writes through the same asynchronous, version-checked commit contract.
+Current limits: nested string-only JSON, a batch-wide conflict policy, full snapshots rather than incremental revisions, no audit search, and no Base Language switching. SQLite commits replace the bounded project localisation snapshot inside a transaction; D1 uses incremental writes through the same asynchronous, version-checked commit contract.
 
 ## Milestone 5: automatic translation
 
@@ -107,6 +107,16 @@ Successful automatic translations create before/after checkpoints and structured
 
 The same service and portable DeepL adapter run on Node/SQLite and Workers/D1. SQLite migration 4 and D1 migration 0002 add nullable provenance fields while preserving historical records. Test-only runtime composition supplies a deterministic fake for English/Arabic browser coverage on port 4324; no real DeepL account is used by tests or CI. See deployment guidance for language mapping, batching, billing estimates and synchronous-operation limits.
 
+## Milestone 6: release hardening
+
+**Instance setup** reports storage access and optional provider configuration. Open its setup instructions for Node/Cloudflare steps and an explicit connection check that sends no project text. A supplied key is not labelled verified until checked; invalid credentials and exhausted quota have actionable feedback. No sign-in protection is implemented yet.
+
+Normal JSON/ZIP exports still require complete, reviewed, valid translations. **Need an incomplete export?** provides an explicitly confirmed draft ZIP containing a language file named `<language>.draft.json` and `DRAFT-manifest.json`. Only ready translations are included; every missing, unreviewed or invalid value is an empty string. The manifest identifies incomplete structural paths and reasons. It is not a production export and never substitutes Base Language text or changes project state.
+
+**Project settings** supports renaming, target-language removal and permanent project deletion. Removal requires confirmation and retains a recovery checkpoint; the Base Language and last target cannot be removed. Project deletion requires typing the current name and deletes all its stored history, with no in-app undo. Both operations reject stale versions. Revision restoration preserves the current project name. Unsaved edits for retained languages survive housekeeping; draft exports use saved data only.
+
+Existing Cloudflare copies can follow the [upgrade guide](docs/DEPLOYMENT.md#upgrading-an-existing-cloudflare-copy), including copies with unrelated Git history. Keep the same Worker/database and secrets, back up first, and apply pending migrations before serving new code. Milestone 6 needs no new schema migration. See [release review notes](docs/RELEASE_READINESS.md) for limitations and follow-up work.
+
 ## Licence
 
-Copyright (c) 2026 3Scribe. 3Locale Community is licensed under the GNU Affero General Public License v3.0 only (`AGPL-3.0-only`). See [LICENSE](LICENSE) for the full licence text. Previously published MIT-licensed versions are not retroactively relicensed; future repository versions covered by this change are distributed under `AGPL-3.0-only`.
+Copyright (c) 2026 3Scribe. 3Locale Community is licensed under the GNU Affero General Public License v3.0 only (`AGPL-3.0-only`). See [LICENSE](LICENSE) for the full licence text and [third-party notices](THIRD_PARTY_NOTICES.md) for attribution. Previously published MIT-licensed versions are not retroactively relicensed; future repository versions covered by this change are distributed under `AGPL-3.0-only`.

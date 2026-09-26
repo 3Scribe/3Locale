@@ -1,3 +1,4 @@
+import { InstanceService } from "../application/instance";
 import { MachineTranslationService } from "../application/machine-translation";
 import { DeepLProvider } from "../providers/deepl";
 import { env } from "cloudflare:workers";
@@ -22,5 +23,16 @@ export function machineTranslations() {
       (env as Cloudflare.Env & { THREELOCALE_DEEPL_API_KEY?: string })
         .THREELOCALE_DEEPL_API_KEY,
     ),
+  );
+}
+
+export function instance() {
+  return new InstanceService(
+    () => new D1ProjectRepository(env.THREELOCALE_DB),
+    new DeepLProvider(
+      (env as Cloudflare.Env & { THREELOCALE_DEEPL_API_KEY?: string })
+        .THREELOCALE_DEEPL_API_KEY,
+    ),
+    "cloudflare",
   );
 }

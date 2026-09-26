@@ -1,3 +1,4 @@
+import { InstanceService } from "../../src/application/instance";
 import { mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { ProjectService } from "../../src/application/projects";
@@ -23,3 +24,6 @@ const machineService = new MachineTranslationService(
 );
 export const projects = () => projectService;
 export const machineTranslations = () => machineService;
+
+export const instance = () =>
+  new InstanceService(() => repository, provider, "node");

@@ -197,3 +197,42 @@ it("bounds provider response bodies before parsing", async () => {
   );
   expect(cancelled).toBe(true);
 });
+
+it("checks credentials through usage only, with account and key quota enforcement", async () => {
+  const send = vi.fn<typeof fetch>(async () =>
+    Response.json({ character_count: 1, character_limit: 10 }),
+  );
+  await new DeepLProvider("check-test:fx", send).checkConfiguration();
+  expect(send.mock.calls[0][0]).toBe("https://api-free.deepl.com/v2/usage");
+  expect(send.mock.calls[0][1]?.body).toBeUndefined();
+  for (const body of [
+    { character_count: 10, character_limit: 10 },
+    {
+      character_count: 1,
+      character_limit: 10,
+      api_key_character_count: 2,
+      api_key_character_limit: 2,
+    },
+  ])
+    await expect(
+      new DeepLProvider("test", async () =>
+        Response.json(body),
+      ).checkConfiguration(),
+    ).rejects.toThrow("machineQuota");
+  for (const [status, code] of [
+    [403, "machineCredentials"],
+    [429, "machineRateLimit"],
+    [500, "machineUnavailable"],
+  ] as const)
+    await expect(
+      new DeepLProvider(
+        "secret",
+        async () => new Response("secret", { status }),
+      ).checkConfiguration(),
+    ).rejects.toThrow(code);
+  await expect(
+    new DeepLProvider("test", async () =>
+      Response.json({ wrong: true }),
+    ).checkConfiguration(),
+  ).rejects.toThrow("machineMalformedResponse");
+});

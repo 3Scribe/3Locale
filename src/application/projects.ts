@@ -96,6 +96,126 @@ export class ProjectService {
     if (!project) throw new AppError("notFound", 404);
     return project;
   }
+  async rename(id: string, name: string, expectedVersion: number) {
+    const previous = await this.get(id);
+    if (previous.version !== expectedVersion)
+      throw new AppError("stalePreview", 409);
+    name = name.trim();
+    if (!name || name.length > 120) throw new AppError("invalidRequest");
+    if (name === previous.name) return previous;
+    return this.save(
+      previous,
+      { ...previous, name, updatedAt: this.clock() },
+      { kind: "project.renamed", previous: previous.name, next: name },
+    );
+  }
+  async delete(id: string, expectedVersion: number, confirmedName: string) {
+    const previous = await this.get(id);
+    if (previous.version !== expectedVersion)
+      throw new AppError("stalePreview", 409);
+    if (confirmedName !== previous.name)
+      throw new AppError("confirmationRequired");
+    await this.repository.delete(id, expectedVersion);
+  }
+  async removeLanguage(
+    id: string,
+    language: string,
+    expectedVersion: number,
+    confirmed: boolean,
+  ) {
+    const previous = await this.get(id);
+    if (previous.version !== expectedVersion)
+      throw new AppError("stalePreview", 409);
+    if (confirmed !== true) throw new AppError("confirmationRequired");
+    if (
+      language === previous.baseLanguage ||
+      !previous.languages.includes(language)
+    )
+      throw new AppError("invalidLanguages");
+    if (previous.languages.length <= 2)
+      throw new AppError("lastTargetLanguage");
+    const next = structuredClone(previous),
+      now = this.clock();
+    next.languages = next.languages.filter((item) => item !== language);
+    delete next.languageMetadata[language];
+    for (const entry of next.entries) {
+      if (entry.translations.some((value) => value.language === language)) {
+        entry.translations = entry.translations.filter(
+          (value) => value.language !== language,
+        );
+        entry.updatedAt = now;
+      }
+    }
+    next.updatedAt = now;
+    next.version++;
+    await this.repository.commit({
+      previous,
+      project: next,
+      expectedVersion,
+      occurredAt: now,
+      events: [{ kind: "language.removed", language }],
+      checkpoints: [
+        { kind: "beforeLanguageRemoval", state: previous, createdAt: now },
+        { kind: "afterLanguageRemoval", state: next, createdAt: now },
+      ],
+      revisionLimit,
+    });
+    return this.get(id);
+  }
+  async exportDraft(
+    id: string,
+    language: string,
+    expectedVersion: number,
+    confirmed: boolean,
+  ) {
+    const project = await this.get(id);
+    if (project.version !== expectedVersion)
+      throw new AppError("stalePreview", 409);
+    if (confirmed !== true) throw new AppError("confirmationRequired");
+    if (
+      language === project.baseLanguage ||
+      !project.languages.includes(language)
+    )
+      throw new AppError("invalidLanguages");
+    if (!project.entries.length) throw new AppError("incompleteExport", 409);
+    const issues: { path: string[]; reason: string }[] = [];
+    const entries = project.entries.map((entry) => {
+      const value = translationFor(entry, language);
+      const reason = !value.value.trim()
+        ? "missing"
+        : !this.format.validateTranslation(
+              translationFor(entry, project.baseLanguage).value,
+              value.value,
+            )
+          ? "invalidPlaceholders"
+          : value.needsReview
+            ? "needsReview"
+            : undefined;
+      if (reason) issues.push({ path: entry.path, reason });
+      return { path: entry.path, value: reason ? "" : value.value };
+    });
+    if (!this.archive) throw new Error("Archive provider required");
+    return this.archive.pack([
+      { name: language + ".draft.json", text: this.format.serialize(entries) },
+      {
+        name: "DRAFT-manifest.json",
+        text: JSON.stringify(
+          {
+            draft: true,
+            project: project.name,
+            version: project.version,
+            language,
+            total: entries.length,
+            ready: entries.length - issues.length,
+            issues,
+            policy: { readyOnly: true, excludedValues: "emptyString" },
+          },
+          null,
+          2,
+        ),
+      },
+    ]);
+  }
   async addLanguage(id: string, language: string) {
     language = canonicalLanguage(language);
     const previous = await this.get(id);
@@ -307,6 +427,7 @@ export class ProjectService {
       throw new AppError("invalidRequest");
     const now = this.clock();
     const next = structuredClone(state);
+    next.name = previous.name;
     next.version = previous.version + 1;
     next.updatedAt = now;
     next.createdAt = previous.createdAt;

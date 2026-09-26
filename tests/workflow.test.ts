@@ -303,6 +303,8 @@ it("waits for deferred persistence before returning results", async () => {
     return operation();
   };
   const deferred: ProjectRepository = {
+    check: () => repository.check(),
+    delete: (id, version) => repository.delete(id, version),
     list: () => later(() => repository.list()),
     get: (id) => later(() => repository.get(id)),
     commit: (change) => later(() => repository.commit(change)),

@@ -20,6 +20,7 @@ export interface TranslationProvider {
   readonly id: string;
   readonly displayName: string;
   readonly configured: boolean;
+  checkConfiguration(): Promise<void>;
   supports(sourceLanguage: string, targetLanguage: string): boolean;
   translate(request: TranslationRequest): Promise<TranslationResult>;
 }
