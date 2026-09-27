@@ -35,6 +35,8 @@ const server = spawn(
     "127.0.0.1",
     "--port",
     "4323",
+    "--var",
+    "THREELOCALE_ORIGIN:http://localhost:4323",
   ],
   { stdio: "inherit" },
 );

@@ -1,5 +1,6 @@
 ---
 import App from "../components/App";
+import OwnerAccess from "../components/OwnerAccess";
 import { createI18n } from "../i18n";
 import "../styles/global.css";
 const language = Astro.url.searchParams.get("lang") === "ar" ? "ar" : "en";
@@ -15,6 +16,14 @@ const i18n = createI18n(language);
     <meta name="description" content={i18n.t("subtitle")} />
   </head>
   <body>
-    <App language={language} client:load />
+    {Astro.locals.auth.authenticated ? (
+      <App language={language} client:load />
+    ) : (
+      <OwnerAccess
+        language={language}
+        setup={Astro.locals.auth.setup}
+        client:load
+      />
+    )}
   </body>
 </html>

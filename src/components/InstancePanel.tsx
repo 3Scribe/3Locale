@@ -10,15 +10,20 @@ export function InstancePanel() {
   const [failed, setFailed] = useState(false);
   useEffect(() => {
     let active = true;
-    api<InstanceStatus>("/api/instance")
-      .then((value) => {
-        if (active) setStatus(value);
-      })
-      .catch(() => {
-        if (active) setFailed(true);
-      });
+    const refresh = () => {
+      void api<InstanceStatus>("/api/instance")
+        .then((value) => {
+          if (active) setStatus(value);
+        })
+        .catch(() => {
+          if (active) setFailed(true);
+        });
+    };
+    refresh();
+    window.addEventListener("credentials-changed", refresh);
     return () => {
       active = false;
+      window.removeEventListener("credentials-changed", refresh);
     };
   }, []);
   return (
@@ -36,6 +41,9 @@ export function InstancePanel() {
             : t(`setup.storage.${status.storage}`)}
       </p>
       <p className="text-sm">{t("setup.security")}</p>
+      <a href="#provider-credentials" className="underline">
+        {t("credentials.title")}
+      </a>
       {failed || status?.storage === "unavailable" ? (
         <Button variant="outline" onClick={() => window.location.reload()}>
           {t("setup.reload")}

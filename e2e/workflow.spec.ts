@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "../tests/helpers/browser-auth";
 import { readFile } from "node:fs/promises";
 const labelPath = (path: string[]) =>
   path.map((segment) => JSON.stringify(segment)).join(" › ");
@@ -48,7 +48,7 @@ test("multiple languages, nested and literal paths, drafts, progress, review and
   await expect(page.getByRole("heading", { name })).toBeVisible();
   await expect(
     page.getByText(
-      "Automatic translation is optional. Ask the server operator to configure their DeepL API key.",
+      "Add a DeepL credential in Settings and explicitly set it as the default to enable automatic translation.",
       { exact: true },
     ),
   ).toBeVisible();
@@ -254,10 +254,12 @@ test("API validates language membership, entry ownership, and export language", 
 test("project creation stays disabled before client hydration", async ({
   browser,
   baseURL,
+  context: authenticatedContext,
 }) => {
   const context = await browser.newContext({
     javaScriptEnabled: false,
     baseURL,
+    storageState: await authenticatedContext.storageState(),
   });
   const page = await context.newPage();
   await page.goto("/");

@@ -1,6 +1,7 @@
 import { InstanceService } from "../application/instance";
 import { MachineTranslationService } from "../application/machine-translation";
-import { DeepLProvider } from "../providers/deepl";
+import { D1SecurityRepository } from "../persistence/security.d1";
+import { composeSecurity } from "./security";
 import { env } from "cloudflare:workers";
 import { ProjectService } from "../application/projects";
 import { D1ProjectRepository } from "../persistence/d1";
@@ -15,24 +16,30 @@ export function projects() {
   );
 }
 
-export function machineTranslations() {
+export async function machineTranslations() {
   return new MachineTranslationService(
     new D1ProjectRepository(env.THREELOCALE_DB),
     jsonResource,
-    new DeepLProvider(
-      (env as Cloudflare.Env & { THREELOCALE_DEEPL_API_KEY?: string })
-        .THREELOCALE_DEEPL_API_KEY,
-    ),
+    await security().credentials.provider(),
   );
 }
 
-export function instance() {
+export async function instance() {
   return new InstanceService(
     () => new D1ProjectRepository(env.THREELOCALE_DB),
-    new DeepLProvider(
-      (env as Cloudflare.Env & { THREELOCALE_DEEPL_API_KEY?: string })
-        .THREELOCALE_DEEPL_API_KEY,
-    ),
+    await security().credentials.provider(),
     "cloudflare",
+  );
+}
+
+export function security() {
+  const settings = env as Cloudflare.Env & {
+    THREELOCALE_ORIGIN?: string;
+    THREELOCALE_CREDENTIAL_ENCRYPTION_KEY?: string;
+  };
+  return composeSecurity(
+    new D1SecurityRepository(env.THREELOCALE_DB),
+    settings.THREELOCALE_ORIGIN,
+    settings.THREELOCALE_CREDENTIAL_ENCRYPTION_KEY,
   );
 }

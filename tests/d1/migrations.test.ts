@@ -1,5 +1,42 @@
 import { expect, it } from "vitest";
 import { d1Fixture } from "./fixture";
+import { ProjectService } from "../../src/application/projects";
+import { jsonResource } from "../../src/providers/json";
+it("preserves projects, provenance and full history while adding unclaimed owner storage", async () => {
+  const f = await d1Fixture(2);
+  try {
+    const service = new ProjectService(f.repository, jsonResource);
+    const project = await service.create({
+      id: crypto.randomUUID(),
+      name: "Existing",
+      baseLanguage: "en",
+      targetLanguages: ["fr"],
+    });
+    await service.import(project.id, '{"hello":"Hello"}');
+    const tables = [
+      "projects",
+      "project_languages",
+      "resource_entries",
+      "translations",
+      "audit_events",
+      "revisions",
+      "revision_chunks",
+    ];
+    const before = await Promise.all(
+      tables.map((table) => f.query(`SELECT * FROM ${table}`)),
+    );
+    await f.applyMigration("0003_community_security.sql");
+    expect(
+      await Promise.all(
+        tables.map((table) => f.query(`SELECT * FROM ${table}`)),
+      ),
+    ).toEqual(before);
+    expect(await f.security.owner()).toBeUndefined();
+    expect((await service.get(project.id)).entries).toHaveLength(1);
+  } finally {
+    await f.close();
+  }
+});
 it("upgrades baseline D1 provenance without changing historical translations", async () => {
   const fixture = await d1Fixture(1);
   try {

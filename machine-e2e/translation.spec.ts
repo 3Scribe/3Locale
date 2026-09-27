@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../tests/helpers/browser-auth";
 import type { ProjectDetail } from "../src/domain/model";
 for (const locale of ["en", "ar"])
   test(`automatic translation confirmation, provenance and approval (${locale})`, async ({

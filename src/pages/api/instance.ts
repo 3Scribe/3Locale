@@ -3,7 +3,7 @@ import { z } from "zod";
 import { instance } from "@runtime";
 import { handle, json, readJson } from "../../server/http";
 export const GET: APIRoute = () =>
-  handle(async () => json(await instance().status()));
+  handle(async () => json(await (await instance()).status()));
 export const POST: APIRoute = ({ request }) =>
   handle(async () => {
     const input = z
@@ -13,5 +13,5 @@ export const POST: APIRoute = ({ request }) =>
       })
       .strict()
       .parse(await readJson(request));
-    return json(await instance().checkProvider(input.confirmed));
+    return json(await (await instance()).checkProvider(input.confirmed));
   });

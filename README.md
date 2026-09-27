@@ -2,7 +2,7 @@
 
 A localisation workspace built with Astro and React, supporting Node/SQLite and Cloudflare Workers/D1.
 
-**No authentication is implemented yet. Anyone who can reach a deployed instance can read and modify projects. Restrict access before hosting sensitive data.**
+**Community is a single-owner application protected by a passkey. Complete first-owner setup on a trusted connection before opening a deployment to others.**
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/3Scribe/3Locale)
 
@@ -17,7 +17,7 @@ npm ci
 npm run dev
 ```
 
-Open http://127.0.0.1:4321. Create a project with a Base Language tag (for example `en`) and comma-separated target language tags (`fr, de`). Import flat or nested JSON, select an editing language, save translations, and export that language. Add more languages from the project editor. Use the interface language selector to switch between English and Arabic.
+Open http://localhost:4321 and register the owner with a passkey. Create a project with a Base Language tag (for example `en`) and comma-separated target language tags (`fr, de`). Import flat or nested JSON, select an editing language, save translations, and export that language. Add more languages from the project editor. Use the interface language selector to switch between English and Arabic.
 
 ```json
 {
@@ -35,7 +35,7 @@ npm run build
 npm start
 ```
 
-Set `HOST=127.0.0.1` and `PORT=4321` in your shell for a loopback-only production server. This milestone has no authentication; hosted access requires deployment-layer protection until the authentication milestone.
+Set `HOST=127.0.0.1` and `PORT=4321` in your shell for a loopback-only production server. For hosting, set `THREELOCALE_ORIGIN` to the exact public HTTPS origin and terminate HTTPS at a trusted proxy. See deployment guidance before first-owner setup.
 
 ## Checks
 
@@ -67,7 +67,7 @@ Browser tests run their own server on port 4322 with a separate `data/e2e.db`. D
 
 Imports are limited to 1 MB of UTF-8, 5,000 string leaves per file, 32 path segments, 500 characters per segment, and 20,000 characters per value. Projects support up to 100 languages including the Base Language. Arrays, non-string leaves, empty objects (including the root), comments, duplicate keys at any level, and trailing commas are rejected. Paths are segment arrays: `["account.name"]` and `["account", "name"]` remain distinct. The editor displays quoted segments separated by `›`. JSON property order and whitespace are not preserved; structure, keys, and values are. Empty translations count as untranslated. Each exported language must have nonblank values with matching placeholders and no pending review for all retained entries. Absent entries are retained. A reimport that would make a path both a string and an object is rejected transactionally. Base Language switching is not implemented. Project settings support confirmed project deletion and target-language removal.
 
-The format treats values as opaque text except for simple brace placeholders. It does not interpret ICU messages or i18next plural semantics. Authentication, collaboration and additional formats are future work.
+The format treats values as opaque text except for simple brace placeholders. It does not interpret ICU messages or i18next plural semantics. Collaboration and additional formats are future work.
 
 ## Structure
 
@@ -109,13 +109,21 @@ The same service and portable DeepL adapter run on Node/SQLite and Workers/D1. S
 
 ## Milestone 6: release hardening
 
-**Instance setup** reports storage access and optional provider configuration. Open its setup instructions for Node/Cloudflare steps and an explicit connection check that sends no project text. A supplied key is not labelled verified until checked; invalid credentials and exhausted quota have actionable feedback. No sign-in protection is implemented yet.
+**Instance setup** reports storage access and optional provider configuration. Open its setup instructions for Node/Cloudflare steps and an explicit connection check that sends no project text. A supplied key is not labelled verified until checked; invalid credentials and exhausted quota have actionable feedback. Owner sign-in is required (Milestone 7).
 
 Normal JSON/ZIP exports still require complete, reviewed, valid translations. **Need an incomplete export?** provides an explicitly confirmed draft ZIP containing a language file named `<language>.draft.json` and `DRAFT-manifest.json`. Only ready translations are included; every missing, unreviewed or invalid value is an empty string. The manifest identifies incomplete structural paths and reasons. It is not a production export and never substitutes Base Language text or changes project state.
 
 **Project settings** supports renaming, target-language removal and permanent project deletion. Removal requires confirmation and retains a recovery checkpoint; the Base Language and last target cannot be removed. Project deletion requires typing the current name and deletes all its stored history, with no in-app undo. Both operations reject stale versions. Revision restoration preserves the current project name. Unsaved edits for retained languages survive housekeeping; draft exports use saved data only.
 
 Existing Cloudflare copies can follow the [upgrade guide](docs/DEPLOYMENT.md#upgrading-an-existing-cloudflare-copy), including copies with unrelated Git history. Keep the same Worker/database and secrets, back up first, and apply pending migrations before serving new code. Milestone 6 needs no new schema migration. See [release review notes](docs/RELEASE_READINESS.md) for limitations and follow-up work.
+
+## Milestone 7: owner authentication and provider credentials
+
+Fresh and upgraded installations without an owner show passkey setup. Existing projects, translations and history become available to that owner without being rewritten. Login uses WebAuthn user verification; sessions last up to seven days and logout revokes them. Use one stable HTTPS origin in production; local development uses `http://localhost:4321`. There are no passwords, email recovery, teams or additional owners. Keep access to your passkey manager/device.
+
+**Settings: translation providers** supports multiple named DeepL credentials, individual connection checks, replacement, renaming and confirmed deletion. Choose a default explicitly; no credential is selected by database order. Secrets cannot be revealed after saving. A random installation key encrypts credentials using AES-256-GCM before they reach SQLite/D1. Keep that key separately backed up with your database recovery plan. The old `THREELOCALE_DEEPL_API_KEY` setting is no longer read.
+
+See [security configuration and upgrades](docs/DEPLOYMENT.md#owner-authentication-and-encryption). SQLite migration 5 and D1 migration 0003 add separate security tables and preserve localisation/history.
 
 ## Licence
 
