@@ -32,7 +32,7 @@ CREATE TABLE provider_credentials (
  version INTEGER NOT NULL,
  createdAt TEXT NOT NULL,
  updatedAt TEXT NOT NULL,
- verifiedAt TEXT,
+ checkedAt TEXT,
  status TEXT NOT NULL,
  UNIQUE (provider, id)
 );

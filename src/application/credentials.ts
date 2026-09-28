@@ -25,7 +25,7 @@ export class CredentialService {
       version: v.version,
       createdAt: v.createdAt,
       updatedAt: v.updatedAt,
-      verifiedAt: v.verifiedAt,
+      checkedAt: v.checkedAt,
       status: v.status,
       isDefault: v.isDefault,
     };
@@ -75,7 +75,7 @@ export class CredentialService {
       version: (previous?.version ?? 0) + 1,
       createdAt: previous?.createdAt ?? time,
       updatedAt: time,
-      verifiedAt: secret !== undefined ? null : previous!.verifiedAt,
+      checkedAt: secret !== undefined ? null : previous!.checkedAt,
       status: secret !== undefined ? "unverified" : previous!.status,
       isDefault: previous?.isDefault ?? false,
     };

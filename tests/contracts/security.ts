@@ -35,6 +35,57 @@ export function securityContract(
   fixture: () => Promise<Fixture>,
 ) {
   describe(`${name} community security`, () => {
+    it("records the completion time of successful and failed credential checks", async () => {
+      const f = await fixture();
+      try {
+        let now = "2026-09-28T09:00:00.000Z";
+        let failure: string | undefined;
+        const service = new CredentialService(
+          f.security,
+          new WebCryptoVault(material()),
+          () => {
+            const provider = new FakeTranslationProvider();
+            provider.checkConfiguration = async () => {
+              now = new Date(Date.parse(now) + 1000).toISOString();
+              if (failure) throw new AppError(failure);
+            };
+            return provider;
+          },
+          () => now,
+        );
+        const created = await service.save("Check times", "synthetic-key");
+        expect(created.checkedAt).toBeNull();
+        for (failure of [
+          undefined,
+          "machineCredentials",
+          "machineQuota",
+          "machineUnavailable",
+        ]) {
+          const result = await service.verify(created.id, true);
+          expect(result).toMatchObject({
+            checkedAt: now,
+            status: failure ?? "ready",
+          });
+          expect(await f.security.credential(created.id)).toMatchObject({
+            checkedAt: now,
+            status: failure ?? "ready",
+          });
+          expect((await service.list()).credentials[0]).toEqual(result);
+        }
+        const replaced = await service.save(
+          "Check times",
+          "synthetic-replacement",
+          created.id,
+          created.version,
+        );
+        expect(replaced).toMatchObject({
+          checkedAt: null,
+          status: "unverified",
+        });
+      } finally {
+        await f.close();
+      }
+    });
     it("preserves secret and verification on rename and propagates a failed default check", async () => {
       const f = await fixture();
       try {
@@ -62,7 +113,7 @@ export function securityContract(
         expect(after.ciphertext).toBe(before.ciphertext);
         expect(after.iv).toBe(before.iv);
         expect(renamed.status).toBe("machineCredentials");
-        expect(renamed.verifiedAt).toBe(before.verifiedAt);
+        expect(renamed.checkedAt).toBe(before.checkedAt);
         await service.setDefault(created.id);
         await expect(
           (await service.provider()).checkConfiguration(),

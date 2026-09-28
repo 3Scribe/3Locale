@@ -88,7 +88,7 @@ export class SqlSecurityRepository implements SecurityRepository {
   async saveCredential(v: ProviderCredential, expectedVersion?: number) {
     if (expectedVersion === undefined) {
       await this.sql.rows(
-        "INSERT INTO provider_credentials(id,provider,name,ciphertext,iv,algorithm,version,createdAt,updatedAt,verifiedAt,status) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+        "INSERT INTO provider_credentials(id,provider,name,ciphertext,iv,algorithm,version,createdAt,updatedAt,checkedAt,status) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
         [
           v.id,
           v.provider,
@@ -99,13 +99,13 @@ export class SqlSecurityRepository implements SecurityRepository {
           v.version,
           v.createdAt,
           v.updatedAt,
-          v.verifiedAt,
+          v.checkedAt,
           v.status,
         ],
       );
     } else {
       const rows = await this.sql.rows(
-        "UPDATE provider_credentials SET name=?,ciphertext=?,iv=?,algorithm=?,version=?,updatedAt=?,verifiedAt=?,status=? WHERE id=? AND version=? RETURNING id",
+        "UPDATE provider_credentials SET name=?,ciphertext=?,iv=?,algorithm=?,version=?,updatedAt=?,checkedAt=?,status=? WHERE id=? AND version=? RETURNING id",
         [
           v.name,
           v.ciphertext,
@@ -113,7 +113,7 @@ export class SqlSecurityRepository implements SecurityRepository {
           v.algorithm,
           v.version,
           v.updatedAt,
-          v.verifiedAt,
+          v.checkedAt,
           v.status,
           v.id,
           expectedVersion,
@@ -153,7 +153,7 @@ export class SqlSecurityRepository implements SecurityRepository {
     if (
       !(
         await this.sql.rows(
-          "UPDATE provider_credentials SET status=?,verifiedAt=? WHERE id=? AND version=? RETURNING id",
+          "UPDATE provider_credentials SET status=?,checkedAt=? WHERE id=? AND version=? RETURNING id",
           [status, time, id, version],
         )
       ).length

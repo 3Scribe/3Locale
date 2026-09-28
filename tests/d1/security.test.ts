@@ -16,7 +16,7 @@ it("encrypts and decrypts compatibly across Node and real workerd", async () => 
       name: "Key",
       createdAt: "2026",
       updatedAt: "2026",
-      verifiedAt: null,
+      checkedAt: null,
       status: "unverified",
       isDefault: false,
       version: 1,

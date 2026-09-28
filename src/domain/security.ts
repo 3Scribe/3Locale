@@ -30,7 +30,7 @@ export interface ProviderCredential extends SealedSecret {
   version: number;
   createdAt: string;
   updatedAt: string;
-  verifiedAt: string | null;
+  checkedAt: string | null;
   status: string;
   isDefault: boolean;
 }

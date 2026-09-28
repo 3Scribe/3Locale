@@ -119,10 +119,10 @@ function CredentialForm({
             {t("credentials.masked")} · {t(`setup.states.${value.status}`)}
             {value.isDefault ? ` · ${t("credentials.default")}` : ""}
           </p>
-          {value.verifiedAt && (
+          {value.checkedAt && (
             <p>
               {t("setup.checked", {
-                time: new Date(value.verifiedAt).toLocaleString(i18n.language),
+                time: new Date(value.checkedAt).toLocaleString(i18n.language),
               })}
             </p>
           )}
