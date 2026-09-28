@@ -30,7 +30,7 @@ export function InstancePanel() {
     <section
       id="instance-setup"
       aria-label={t("setup.title")}
-      className="mb-6 space-y-3 rounded-xl border border-input p-5"
+      className="mb-6 space-y-3 rounded-xl border border-input p-5 wrap-anywhere"
     >
       <h2 className="text-lg font-semibold">{t("setup.title")}</h2>
       <p aria-live="polite">

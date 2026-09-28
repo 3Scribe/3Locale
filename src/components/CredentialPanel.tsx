@@ -35,7 +35,7 @@ export function CredentialPanel() {
   return (
     <details
       id="provider-credentials"
-      className="mb-6 rounded-xl border border-input p-5"
+      className="mb-6 rounded-xl border border-input p-5 wrap-anywhere"
     >
       <summary className="cursor-pointer text-lg font-semibold">
         {t("credentials.title")}
