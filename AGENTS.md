@@ -204,3 +204,9 @@ Run the shared repository contract on both SQLite and real local D1. Validate bo
 # Housekeeping and Draft Exports
 
 Deletion must use the database's authoritative version guard and atomically remove all owned rows/history. Language removal preserves the Base Language and at least one target, with recovery checkpoints; history may retain removed values. Restoration changes localisation state, not the current project name. Keep strict production exports unchanged. Draft exports must be explicitly confirmed, clearly named and accompanied by a manifest identifying incomplete paths; never silently fall back to source text.
+
+# Community Security
+
+Protect all data/settings APIs centrally with session authentication and the separate owner policy, including before first setup. Setup is allowed only while the database singleton owner is absent; never replace it through unauthenticated requests. WebAuthn must enforce the configured origin/RP and user verification. Challenges are short-lived and single-use; persist session-token hashes, not bearer tokens. Unsafe browser requests require the exact configured Origin.
+
+Provider credentials are installation-scoped records with stable IDs; multiple records per provider are valid. Resolve an explicitly selected default through CredentialService, never deployment API-key fallbacks or database ordering. Keep AES-GCM material behind SecretVault, bind context, and return only explicit metadata projections. Secret replacement invalidates verification and delayed checks must guard the credential version. Never include credentials, ciphertext, nonces or root keys in project history, responses or logs. Keep first-claim, passkey continuity and root-key retention requirements in deployment documentation.

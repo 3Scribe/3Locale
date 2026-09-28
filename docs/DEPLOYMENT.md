@@ -2,7 +2,7 @@
 
 3Locale Community supports Node/SQLite and Cloudflare Workers/D1. Both run the same application services, JSON/ZIP providers, UI and HTTP routes.
 
-**This milestone has no authentication. Anyone who can reach an instance can read and modify its projects. Do not expose sensitive data or treat it as a shared production service.** Keep Node bound to loopback. For a hosted instance, restrict access at the deployment layer (for example Cloudflare Access) until application authentication is implemented. Access is optional external protection, not part of 3Locale's business logic.
+**Community now requires a single owner and passkey authentication. Keep first-owner setup behind loopback or deployment-layer access restrictions until you claim the installation. The first visitor able to complete setup becomes its owner.**
 
 ## Node and SQLite
 
@@ -61,7 +61,7 @@ For subsequent deployments, `npm run deploy` performs the Cloudflare build, remo
 
 ## Deploy to Cloudflare
 
-The official README button clones the repository into your account and uses the D1 resource described by `wrangler.jsonc`. Cloudflare supports provisioning D1 without a checked-in database ID. Review the unauthenticated-instance warning before proceeding.
+The official README button clones the repository into your account and uses the D1 resource described by `wrangler.jsonc`. Cloudflare supports provisioning D1 without a checked-in database ID. Configure the public origin and complete protected owner setup before opening access.
 
 Use Node 24 in Workers Builds. The `deploy` package script builds the Cloudflare artifact, applies remote migrations by binding name, and deploys the generated Worker configuration. Cloudflare can detect this script; ensure the deployment command is `npm run deploy`. The default `npm run build` builds Node only; the deployment script explicitly builds Cloudflare regardless. To avoid that extra Node build, set the build command to `npm run build:cloudflare` and the deploy command to `npm run db:migrate:remote && npx wrangler deploy --config dist-cloudflare/server/wrangler.json`.
 
@@ -79,11 +79,11 @@ D1/Worker limits still apply: database capacity, per-invocation query counts, da
 
 ## Secrets and configuration
 
-Automatic translation is optional and requires only the deployment owner's DeepL key. Do not create a placeholder credential to run 3Locale without translation.
+Automatic translation is optional. Store DeepL credentials in authenticated Settings; the deployment owns only their root encryption key. Do not create placeholder credentials.
 
 Deployment credentials belong in Cloudflare Worker secrets (`npx wrangler secret put THREELOCALE_<NAME>`) and in an ignored `.dev.vars` file for local Worker development. Use the same `THREELOCALE_` convention with server-side environment configuration on Node. `.dev.vars*` and `.env*` are ignored; never put secrets in Wrangler `vars`, public Vite/Astro variables, React props, responses or logs. Runtime composition should read configuration and inject only the capabilities/settings application services need.
 
-These are self-hoster deployment secrets. Future per-user or per-project credentials require separate application-managed secure storage, which is not implemented here. Cloudflare bindings are read only by `src/server/runtime.cloudflare.ts`; `process.env` stays at the Node composition boundary.
+Provider credentials are encrypted application records scoped to the installation. Per-user and per-project credentials remain out of scope. Cloudflare bindings are read only by `src/server/runtime.cloudflare.ts`; `process.env` stays at the Node composition boundary.
 
 ## References
 
@@ -97,19 +97,9 @@ These are self-hoster deployment secrets. Future per-user or per-project credent
 
 ## Optional automatic translation (BYOK)
 
-DeepL is the first adapter because it provides a dedicated translation API with documented batching, language mapping and XML placeholder protection. Obtain an API key for your own DeepL API Free or Pro account. The key is deployment-wide and optional. Community neither proxies nor pays for usage; DeepL charges your account. All other workflows operate without it.
+DeepL is the sole production translation adapter. Obtain an API Free or Pro key from your own account, then add it through authenticated **Settings: translation providers**. Name each credential, explicitly test it, and choose a default. Multiple keys may be stored independently; replacing, renaming or deleting one does not change the others. No default is selected automatically, even when only one credential exists. Deleting the default leaves translation unavailable until another is selected. Manual workflows remain available without a provider credential.
 
-**Node:** inject `THREELOCALE_DEEPL_API_KEY` into the server process using your host's secret/environment facility, then restart the server. For local use, an ignored environment file loaded by Node with `node --env-file=.env dist/server/entry.mjs` is also possible; keep its permissions restricted. The Node runtime reads `process.env` only on the server. Do not use a public Vite/Astro variable or put a key in source code or command-line arguments.
-
-**Cloudflare:** after deploying the correct Worker, add the runtime secret through Wrangler's interactive prompt:
-
-```sh
-npx wrangler secret put THREELOCALE_DEEPL_API_KEY
-```
-
-Run in the configured project with the intended Worker name/account (and the matching `--env` if you operate named environments). For local Worker development, put the same key in ignored `.dev.vars` as `THREELOCALE_DEEPL_API_KEY=<your key>`. Never add it to Wrangler `vars` or deployment-button metadata. The optional secret is typed at runtime composition; it does not require a placeholder binding or key for builds/tests. Key removal disables translation without affecting other data. Free keys ending in `:fx` select DeepL's API Free endpoint; others use Pro. Requests use the authorization header, fixed HTTPS endpoints and no redirects.
-
-There is still no application authentication. Anyone who can reach the instance can trigger translation charges when a key is configured. Restrict access at the deployment layer and use DeepL account limits appropriate to your deployment. Do not expose an unrestricted instance with a paid key.
+The server decrypts the selected credential only for an explicit check/translation. Free keys ending in `:fx` select API Free; other keys use Pro. Requests use fixed HTTPS endpoints, authorization headers and no redirects. Community does not pay for usage. The former `THREELOCALE_DEEPL_API_KEY` environment/Worker secret is no longer read and there is no fallback; migrate it manually through Settings and remove the obsolete deployment secret. Do not place a key in URLs, source code, build settings or browser storage.
 
 ### Languages, counting and limits
 
@@ -148,16 +138,60 @@ The deployment button creates a copy in your account. It does not automatically 
 4. If the copy has unrelated history, or after the planned public repository reset, use a **fresh checkout in a separate directory** at the chosen upstream commit. Reapply only your deployment settings (Worker name, account, routes and the existing D1 ID) to the new Wrangler configuration. Retain `migrations_dir`, bindings and new runtime settings from upstream. Reconnect Workers Builds to your reviewed code branch/repository if needed. Do not overwrite the new source tree with an old complete config or copy old build output/dependencies. This route does not depend on preserving Git history.
 5. Ensure the new config targets the **same Worker and existing database ID**. Keep secrets on that Worker; do not copy secret values into Git or Wrangler `vars`. Preserve any local ignored development secrets separately. Pin Node 24 and run `npm ci`, the documented checks and `npm run build:cloudflare` before deployment. Retain the original checkout/commit for diagnosis.
 6. Run `npm run deploy` from the reviewed/configured checkout, or merge to the Workers Builds branch with that deploy command. It builds, applies only pending D1 migrations and deploys the generated Worker config. Review Wrangler's target account/database and pending migrations; stop on an unexpected target or migration failure. Do not delete migration tracking or rerun baseline SQL manually.
-7. Open the instance, confirm storage availability, load an existing project, inspect translations/history and exercise export. If using DeepL, run the explicit connection check. Verify the existing secret, custom routes and deployment-layer access protection still apply before reopening access.
+7. Open the instance, confirm storage availability, load an existing project, inspect translations/history and exercise export. If using DeepL, run the explicit connection check. On a Milestone 7 upgrade, complete owner setup first, add the retained DeepL key through Settings, choose its default and test it. Verify the encryption secret, custom routes and deployment-layer protection before reopening access.
 
 Worker code rollback does not undo database migrations. Prefer a forward correction; only roll code back when compatible with the current schema. Database recovery can discard writes after the backup/bookmark and requires maintenance coordination. Do not restore an old dump over a live database casually.
 
-Milestone 6 adds no schema migration: SQLite remains at version 4 and D1 at migration 0002. Existing installs must still apply earlier pending migrations. Renames and language removal use normal version-checked transactions; whole-project deletion removes all owned current data, audit, revisions and D1 revision chunks atomically. Deleting a project does not erase external backups or D1 Time Travel retention. Language removal retains historical data in audit/recovery revisions until normal retention removes checkpoints. It is housekeeping, not a data-erasure feature.
+Milestone 7 adds SQLite migration 5 and D1 migration 0003 for owner, challenges, hashed sessions, encrypted credentials and defaults. Localisation records and history are not rewritten. Existing installs must still apply earlier pending migrations. Renames and language removal use normal version-checked transactions; whole-project deletion removes all owned current data, audit, revisions and D1 revision chunks atomically. Deleting a project does not erase external backups or D1 Time Travel retention. Language removal retains historical data in audit/recovery revisions until normal retention removes checkpoints. It is housekeeping, not a data-erasure feature.
 
 ## Reading instance and provider status
 
 The setup panel checks storage access against the current translation schema without writing test data. “Storage available” means the schema can be read; it cannot guarantee future writes will fit disk/quota limits. If unavailable, check the server's database binding/path and pending migrations, then reload. A missing DeepL key does not block manual workflows.
 
-A supplied key is initially **unverified**. The explicit **Check provider connection** action calls DeepL's [usage endpoint](https://developers.deepl.com/api-reference/usage-and-quota/check-usage-and-limits) without sending project content or performing a translation. It checks credential acceptance and account/key character limits. Success is a point-in-time check, not a promise that every language pair or later request will succeed. Results are not stored, and refresh returns to unverified. Invalid keys, exhausted quota, rate limits and connectivity failures have safe, actionable feedback. Changes to server credentials require the normal host restart/secret update followed by reload/check.
+A supplied key is initially **unverified**. The explicit **Check provider connection** action calls DeepL's [usage endpoint](https://developers.deepl.com/api-reference/usage-and-quota/check-usage-and-limits) without sending project content or performing a translation. It checks credential acceptance and account/key character limits. Success is a point-in-time check, not a promise that every language pair or later request will succeed. Per-credential results and check times are retained in Settings. The general instance panel remains a transient check and returns to unverified on refresh; it is not the credential history. Invalid keys, exhausted quota, rate limits and connectivity failures have safe, actionable feedback. Replacing a saved credential resets its verification; test the replacement explicitly.
 
-Provider checks require network egress to DeepL. Project loading, import, previews, export and housekeeping still never trigger provider requests. No credential editor or browser-managed secret store is introduced before authentication.
+Provider checks require network egress to DeepL. Project loading, import, previews, export and housekeeping still never trigger provider requests. Credential editing requires an owner session. Saved plaintext, encrypted payloads and IVs are never returned to the browser.
+
+## Owner authentication and encryption
+
+### Installation origin and first claim
+
+Set the non-secret `THREELOCALE_ORIGIN` to the exact external origin, for example `https://locale.example.com`, without a trailing slash or path. Use the same hostname for all access. WebAuthn binds passkeys to that hostname; a domain move needs a separately planned migration. Production must use HTTPS. The only HTTP exception is the literal `localhost` hostname with its local port (default `http://localhost:4321`), for local use. Open localhost rather than the numeric address printed by the dev server. The HTTP listener may still bind to 127.0.0.1. Do not weaken origin checks or trust arbitrary forwarded host headers. Configure a trusted reverse proxy so Astro sees the configured public origin.
+
+On Workers, set `THREELOCALE_ORIGIN` as a non-secret runtime variable in deployment configuration/dashboard. The repository cannot infer the final deploy-button hostname: set it after provisioning. For local Workers, use the same origin in ignored `.dev.vars`. A missing production origin fails closed when reached through another hostname.
+
+Protect setup with loopback, a private maintenance network or deployment-layer access restriction. First claim is open only while no owner exists, and the database permits exactly one owner even under concurrent attempts. Complete owner name/passkey registration before opening access. Existing installations enter this same setup mode while keeping their projects private; no project ownership rewrite or invented historical actor is performed.
+
+Use a passkey-capable browser/device or passkey manager with user verification. Registration creates a discoverable passkey; login requires its proof, expected challenge, exact origin and RP ID. There is one owner with one registered passkey in this milestone. Passkey-manager synchronization can provide device continuity. Additional passkeys, recovery and owner reset are not implemented; do not delete the owner table to recover access to a public instance. Plan credential/device continuity and offline backups before relying on the installation.
+
+### Root encryption key
+
+Generate a random 32-byte base64 key once in a trusted local terminal (the command prints a new secret; do not paste its output into issues or logs):
+
+```sh
+node -e "console.log(require('node:crypto').randomBytes(32).toString('base64'))"
+```
+
+Store it as `THREELOCALE_CREDENTIAL_ENCRYPTION_KEY`. Node reads it from the server process environment; your process manager can inject it or Node can load an ignored restricted-permission file using `node --env-file=.env dist/server/entry.mjs`. For local development, start the Astro CLI with the equivalent Node environment-file loading or inject the variable in your shell. Astro does not automatically copy a local .env file into process.env.
+
+For the intended Worker/account, use Wrangler's interactive secret prompt:
+
+```sh
+npx wrangler secret put THREELOCALE_CREDENTIAL_ENCRYPTION_KEY
+```
+
+For local Workers, keep the same name in ignored `.dev.vars`. Never put this key in Wrangler `vars`, build-time/public environment variables, Git, browser props or logs. The key is never stored in SQLite/D1. Missing or invalid configuration disables secret storage/use with an actionable error while authenticated manual workflows remain usable.
+
+Encryption uses Web Crypto AES-256-GCM with a fresh random 96-bit IV and authentication tag, and binds a versioned Community context, credential ID and provider as additional authenticated data. The persisted format is versioned. Ciphertext copied between records/providers cannot decrypt. The key is imported as non-extractable for each operation; plaintext exists only in server memory during the operation and cannot be revealed through the API. Verification persists only safe state/time, not provider response bodies. Changing the default does not re-encrypt anything.
+
+**Back up the root key separately and retain it alongside each database backup's recovery plan.** A database backup alone cannot recover provider secrets. Losing/changing the key does not erase or silently re-encrypt stored records: operations fail safely. Restore the original root key, or explicitly replace each provider secret under the intended new key. Automatic root-key rotation/recovery is outside this milestone. Deleting a credential does not erase external backups.
+
+### Session and browser boundary
+
+Sessions use 256-bit random opaque tokens in HttpOnly, SameSite=Strict, host-only cookies (Secure over HTTPS; localhost HTTP is for local use only). Only SHA-256 token hashes are stored. Sessions expire after seven days without sliding renewal; logout removes the server record. WebAuthn challenges are cookie-bound, expire after five minutes and are atomically consumed once. Expired records are pruned when new challenges/sessions are issued. Outstanding challenges are globally bounded; operators should also apply host-level request/rate limits to prevent denial of service.
+
+All data/settings APIs enforce session authentication and the separate Community owner policy in middleware. Unsafe methods require an exact Origin, and JSON endpoints enforce bounded bodies and content type. Security headers prevent framing, MIME sniffing and referrer leakage; HTTPS responses use HSTS. Do not cache authenticated HTML/API responses at a proxy. Logout does not cancel already-authorised in-flight requests. Authentication is not a substitute for host security, trusted proxy configuration or protecting database/secret backups.
+
+SQLite migration 5 and D1 migration 0003 are forward-only additions. Preserve released migration identities. Back up data before upgrade, configure origin/encryption material, apply migrations, complete protected setup, confirm existing projects/history, add provider keys through Settings and test their default. Rolling code back to an unauthenticated release reopens access even though the new security tables survive; keep deployment access restricted during rollback.
+
+Tests use Chromium's virtual WebAuthn authenticator through real registration/login, and shared security contracts against SQLite and local workerd D1. Generated test passkeys/databases stay in ignored data files and must not be published as release artifacts. No real provider credentials or live DeepL calls are used.

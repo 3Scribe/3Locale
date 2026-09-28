@@ -1,4 +1,6 @@
 import { InstancePanel } from "./InstancePanel";
+import { OwnerSession } from "./OwnerAccess";
+import { CredentialPanel } from "./CredentialPanel";
 import { ProjectSettings, DraftExport } from "./ProjectSettings";
 import { MachinePanel } from "./MachinePanel";
 import type { ImportPreview, ConflictPolicy } from "../application/imports";
@@ -170,7 +172,9 @@ function Workspace() {
       <p role="status" className="mb-4 text-sm text-primary">
         {busy ? t("working") : notice ? t(notice) : ""}
       </p>
+      <OwnerSession />
       <InstancePanel />
+      <CredentialPanel />
       {error === "stalePreview" && project && (
         <Button
           variant="outline"

@@ -6,7 +6,7 @@ export const POST: APIRoute = ({ params, request }) =>
   handle(async () => {
     const id = projectId.parse(params.id),
       input = machineInput.parse(await readJson(request));
-    const service = machineTranslations();
+    const service = await machineTranslations();
     if (input.action === "preview")
       return json(await service.preview(id, input));
     if (input.action === "approve")

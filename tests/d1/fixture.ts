@@ -3,6 +3,7 @@ import { unstable_splitSqlQuery } from "wrangler";
 import { readFile, readdir } from "node:fs/promises";
 import ts from "typescript";
 import { AppError, type ProjectRepository } from "../../src/domain/model";
+import type { SecurityRepository } from "../../src/domain/security";
 
 export async function d1Fixture(migrationCount = Number.POSITIVE_INFINITY) {
   const modules: Record<string, { type: "esm"; contents: string }> = {};
@@ -10,6 +11,9 @@ export async function d1Fixture(migrationCount = Number.POSITIVE_INFINITY) {
     "src/persistence/d1",
     "src/persistence/delta",
     "src/domain/model",
+    "src/persistence/security",
+    "src/persistence/security.d1",
+    "src/providers/credential-crypto",
   ]) {
     modules[name] = {
       type: "esm",
@@ -25,11 +29,15 @@ export async function d1Fixture(migrationCount = Number.POSITIVE_INFINITY) {
     type: "esm",
     contents: `
 import { D1ProjectRepository } from './src/persistence/d1';
+import { D1SecurityRepository } from './src/persistence/security.d1';
+import { WebCryptoVault } from './src/providers/credential-crypto';
 export default {async fetch(request,env) {
  try {
   const {method,args}=await request.json();
-  const repository=new D1ProjectRepository(env.THREELOCALE_DB);
-  const value=method==='sql' ? await env.THREELOCALE_DB.batch(args.map(sql=>env.THREELOCALE_DB.prepare(sql))) : await repository[method](...args);
+  if(method==='seal') return Response.json({value:await new WebCryptoVault(args[0]).seal(args[1],args[2],args[3])});
+  if(method==='open') return Response.json({value:await new WebCryptoVault(args[0]).open(args[1])});
+  const repository=method.startsWith('security:') ? new D1SecurityRepository(env.THREELOCALE_DB) : new D1ProjectRepository(env.THREELOCALE_DB);
+  const value=method==='sql' ? await env.THREELOCALE_DB.batch(args.map(sql=>env.THREELOCALE_DB.prepare(sql))) : await repository[method.replace('security:','')](...args);
   return Response.json({value});
  }catch(error){return Response.json({error:{message:error.message,code:error.code,status:error.status}}, {status:500});}
 }};`,
@@ -87,6 +95,20 @@ export default {async fetch(request,env) {
       );
     return {
       repository,
+      crypto: {
+        seal: (...args: unknown[]) =>
+          invoke<import("../../src/domain/security").SealedSecret>(
+            "seal",
+            args,
+          ),
+        open: (...args: unknown[]) => invoke<string>("open", args),
+      },
+      security: new Proxy({} as SecurityRepository, {
+        get:
+          (_target, method) =>
+          (...args: unknown[]) =>
+            invoke(`security:${String(method)}`, args),
+      }),
       async applyMigration(name: string) {
         await invoke(
           "sql",

@@ -32,6 +32,8 @@
     "@astrojs/node": "^11.1.6",
     "@astrojs/react": "^7.0.0",
     "@radix-ui/react-slot": "^1.3.3",
+    "@simplewebauthn/browser": "^14.0.0",
+    "@simplewebauthn/server": "^14.0.3",
     "@tailwindcss/vite": "^4.3.3",
     "astro": "^7.3.5",
     "class-variance-authority": "^0.7.1",
@@ -68,7 +70,7 @@
   "cloudflare": {
     "bindings": {
       "THREELOCALE_DB": {
-        "description": "Stores 3Locale Community projects, translations, audit events and revisions. This instance has no authentication."
+        "description": "Stores Community projects, history, single-owner authentication and encrypted provider credentials. Configure THREELOCALE_ORIGIN and protect initial owner setup."
       }
     }
   }

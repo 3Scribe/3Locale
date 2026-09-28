@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../tests/helpers/browser-auth";
 import { readFile } from "node:fs/promises";
 import { unzipSync, strFromU8 } from "fflate";
 import en from "../src/i18n/en.json" with { type: "json" };

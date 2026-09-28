@@ -1,6 +1,7 @@
 import { InstanceService } from "../application/instance";
 import { MachineTranslationService } from "../application/machine-translation";
-import { DeepLProvider } from "../providers/deepl";
+import { SqliteSecurityRepository } from "../persistence/security.sqlite";
+import { composeSecurity } from "./security";
 import { zipArchive } from "../providers/zip";
 import { mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -26,22 +27,38 @@ export function projects() {
   return service;
 }
 
-export function machineTranslations() {
+export async function machineTranslations() {
   projects();
   return new MachineTranslationService(
     repository,
     jsonResource,
-    new DeepLProvider(process.env.THREELOCALE_DEEPL_API_KEY),
+    await security().credentials.provider(),
   );
 }
 
-export function instance() {
+export async function instance() {
   return new InstanceService(
     () => {
       projects();
       return repository;
     },
-    new DeepLProvider(process.env.THREELOCALE_DEEPL_API_KEY),
+    await security().credentials.provider(),
     "node",
+  );
+}
+
+let securityRepository: SqliteSecurityRepository;
+export function security() {
+  if (!securityRepository) {
+    const path = resolve(
+      process.env.THREELOCALE_DATABASE_PATH ?? "data/three-locale.db",
+    );
+    mkdirSync(dirname(path), { recursive: true });
+    securityRepository = new SqliteSecurityRepository(path);
+  }
+  return composeSecurity(
+    securityRepository,
+    process.env.THREELOCALE_ORIGIN,
+    process.env.THREELOCALE_CREDENTIAL_ENCRYPTION_KEY,
   );
 }

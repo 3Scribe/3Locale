@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../tests/helpers/browser-auth";
 import type { ProjectDetail, Revision, AuditEvent } from "../src/domain/model";
 test("built Worker serves hydrated RTL UI and persists import, edit, export and recovery through D1", async ({
   page,

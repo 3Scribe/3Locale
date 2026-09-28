@@ -47,7 +47,7 @@
     "baseFileRequired": "Include and confirm a file for the chosen Base Language.",
     "stalePreview": "The project changed. Reload the project and analyse again before applying or restoring.",
     "conflictPolicyRequired": "Choose how to resolve translation conflicts.",
-    "machineNotConfigured": "Automatic translation is optional. Ask the server operator to configure their DeepL API key.",
+    "machineNotConfigured": "Add a DeepL credential in Settings and explicitly set it as the default to enable automatic translation.",
     "machineUnsupported": "This language pair is not supported by the translation provider.",
     "machineInvalidResult": "The result was invalid or changed protected placeholders. This entry was not saved.",
     "machineCredentials": "DeepL rejected the configured credentials. Contact the server operator.",
@@ -57,7 +57,17 @@
     "machineRequestTooLarge": "The protected text exceeds the provider request limit. Translate fewer or shorter strings.",
     "machineMalformedResponse": "The provider returned an invalid response. No translations were saved.",
     "confirmationRequired": "Confirm the action exactly as requested.",
-    "lastTargetLanguage": "Keep at least one target language. Add another target before removing this one."
+    "lastTargetLanguage": "Keep at least one target language. Add another target before removing this one.",
+    "authenticationRequired": "Your session has ended. Reload and sign in again.",
+    "authenticationFailed": "Passkey sign-in or registration failed or was cancelled. Try again with the registered passkey and the correct installation address.",
+    "setupComplete": "An owner already exists. Reload and sign in.",
+    "setupRequired": "Complete owner setup first.",
+    "authBusy": "Too many sign-in attempts. Wait a few minutes and try again.",
+    "authConfiguration": "The installation address is not configured correctly. Ask the operator to set THREELOCALE_ORIGIN to the exact HTTPS origin (or http://localhost with its port for local use).",
+    "encryptionConfiguration": "Credential encryption is unavailable. The operator must configure a valid THREELOCALE_CREDENTIAL_ENCRYPTION_KEY before saving or using provider secrets. Manual workflows remain available.",
+    "credentialDecryption": "This credential cannot be decrypted with the installation key. Restore the original encryption key or explicitly replace the credential. Existing data has not been changed.",
+    "staleCredential": "This credential changed during the operation. Reload settings and try again.",
+    "credentialMissing": "This credential no longer exists. Reload settings and choose a default."
   },
   "baseLanguage": "Base Language",
   "baseText": "Base Language text",
@@ -192,13 +202,13 @@
       "available": "Storage is available. You can create projects and translate manually.",
       "unavailable": "Storage is unavailable or needs an upgrade. Check database access and apply the deployment migrations, then reload."
     },
-    "security": "No sign-in protection yet. Restrict access before sharing this instance; anyone with access can change or delete projects and use your translation account.",
+    "security": "This installation is protected by the owner’s passkey and session.",
     "reload": "Reload after setup",
     "instructions": "Provider setup and connection check",
-    "optional": "Automatic translation is optional. Supply your own provider key in the deployment settings, never in this browser. Your provider bills your account.",
-    "node": "Set the server environment variable THREELOCALE_DEEPL_API_KEY using your host’s secret settings, then restart the server.",
-    "cloudflare": "Add the Worker secret THREELOCALE_DEEPL_API_KEY in Cloudflare or use the command below. For local development, use the ignored .dev.vars file.",
-    "checkHint": "Check credentials and available quota without sending project text. This contacts the provider only when you press the button. A successful check does not guarantee every language pair or later request will succeed.",
+    "optional": "Manual workflows work without provider credentials. Add a credential and choose its default in Settings.",
+    "node": "For encrypted credentials, set THREELOCALE_CREDENTIAL_ENCRYPTION_KEY in the server environment and retain a separate secure backup. Add DeepL keys through Settings.",
+    "cloudflare": "Set THREELOCALE_CREDENTIAL_ENCRYPTION_KEY as a Worker secret and retain a separate secure backup. Add DeepL keys through Settings.",
+    "checkHint": "This check uses the default credential. Test other credentials individually in Settings.",
     "check": "Check provider connection",
     "guide": "Open setup and deployment guide",
     "checked": "Last checked: {{time}}",
@@ -212,7 +222,7 @@
       "machineUnavailable": "Provider could not be reached. Check connectivity and try again.",
       "machineMalformedResponse": "Provider returned an unexpected response. Try again later."
     },
-    "command": "npx wrangler secret put THREELOCALE_DEEPL_API_KEY"
+    "command": "npx wrangler secret put THREELOCALE_CREDENTIAL_ENCRYPTION_KEY"
   },
   "manage": {
     "title": "Project settings",
@@ -236,5 +246,35 @@
     "confirm": "I understand that {{language}} is a draft and may contain empty values",
     "download": "Download draft ZIP",
     "downloaded": "Draft ZIP downloaded. Review its manifest before using it."
-  }
+  },
+  "auth": {
+    "setup": "Set up the owner",
+    "login": "Owner sign in",
+    "setupHint": "Create the single owner of this installation with a passkey. Existing projects will become available after setup.",
+    "loginHint": "Use your registered passkey to open this installation.",
+    "retention": "Keep your passkey available through your device or passkey manager. Email and password recovery are not available.",
+    "name": "Owner name",
+    "register": "Create owner with passkey",
+    "signIn": "Sign in with passkey",
+    "logout": "Sign out"
+  },
+  "credentials": {
+    "title": "Settings: translation providers",
+    "hint": "Add named DeepL credentials and explicitly choose a default for automatic translation. Testing checks connection and quota without sending project text. Secrets cannot be revealed after saving.",
+    "empty": "No credentials saved. Manual translation remains available.",
+    "add": "Add DeepL credential",
+    "name": "Credential name",
+    "secret": "DeepL API key",
+    "replacement": "Replacement API key (leave blank to keep current secret)",
+    "save": "Save credential",
+    "saved": "Credential settings saved.",
+    "masked": "Secret stored securely ••••••••",
+    "default": "Default",
+    "setDefault": "Use as default",
+    "test": "Test this credential",
+    "delete": "Delete credential",
+    "deleteHint": "This permanently removes this saved secret. If it is the default, automatic translation stops until you choose another. Other credentials and projects remain unchanged.",
+    "confirmDelete": "Confirm deletion of {{name}}"
+  },
+  "switchLanguage": "العربية"
 }

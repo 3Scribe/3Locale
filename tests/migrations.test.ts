@@ -22,6 +22,36 @@ afterEach(() => {
   rmSync(folder, { recursive: true, force: true });
 });
 const version = () => db.prepare("PRAGMA user_version").get()?.user_version;
+it("adds owner and encrypted-credential storage without touching existing localisation or history", () => {
+  migrate(db, migrations.slice(0, 4));
+  seed();
+  db.prepare(
+    "UPDATE translations SET origin='machine',originProvider='deepl',originModel='model' WHERE language='fr'",
+  ).run();
+  db.prepare(
+    "INSERT INTO audit_events(projectId,operationId,occurredAt,kind,details) VALUES(?,?,?,?,?)",
+  ).run("project", "old-op", "2026", "translation.saved", '{"language":"fr"}');
+  db.prepare(
+    "INSERT INTO revisions(projectId,createdAt,kind,state) VALUES(?,?,?,?)",
+  ).run("project", "2026", "afterImport", '{"historical":"snapshot"}');
+  const tables = [
+    "projects",
+    "project_languages",
+    "resource_entries",
+    "translations",
+    "audit_events",
+    "revisions",
+  ];
+  const before = tables.map((table) =>
+    db.prepare(`SELECT * FROM ${table}`).all(),
+  );
+  migrate(db);
+  expect(
+    tables.map((table) => db.prepare(`SELECT * FROM ${table}`).all()),
+  ).toEqual(before);
+  expect(db.prepare("SELECT * FROM community_owner").all()).toEqual([]);
+  expect(db.prepare("PRAGMA foreign_key_check").all()).toEqual([]);
+});
 const seed = () => {
   db.exec("BEGIN");
   db.prepare(
