@@ -2,6 +2,10 @@
 
 3Locale Community uses `AGPL-3.0-only`; see [LICENSE](LICENSE). Third-party components retain their own licences. Dependency versions, source locations and licence identifiers are recorded in `package-lock.json`; installed packages contain their licence texts. Preserve those notices when distributing dependencies or compiled artifacts.
 
+## Noto fonts
+
+Noto Sans and Noto Sans Arabic are bundled locally through Fontsource under the SIL Open Font License 1.1. Their copyright and licence texts are distributed with the application: [Noto Sans](public/fonts/LICENSE-noto-sans.txt) and [Noto Sans Arabic](public/fonts/LICENSE-noto-sans-arabic.txt).
+
 ## shadcn/ui
 
 The components under `src/components/ui` are derived from [shadcn/ui](https://github.com/shadcn-ui/ui). Its [upstream licence](https://github.com/shadcn-ui/ui/blob/main/LICENSE.md) is reproduced below. This attribution does not change the licence of the 3Locale application.

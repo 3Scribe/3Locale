@@ -12,6 +12,7 @@ export default defineConfig({
     reuseExistingServer: false,
     timeout: 120000,
     env: {
+      THREELOCALE_BROWSER_TEST: "1",
       THREELOCALE_DATABASE_PATH: `data/machine-e2e-${randomUUID()}.db`,
       THREELOCALE_ORIGIN: "http://localhost:4324",
       THREELOCALE_CREDENTIAL_ENCRYPTION_KEY: randomBytes(32).toString("base64"),

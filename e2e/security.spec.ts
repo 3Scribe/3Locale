@@ -9,6 +9,13 @@ test("all data APIs require a session, CSRF is rejected, and logout revokes the 
   page,
 }) => {
   const outsider = await browser.newContext({ baseURL });
+  for (const route of ["/projects", "/keys", "/settings", "/account"]) {
+    const response = await outsider.request.get(route);
+    expect(response.headers()["cache-control"]).toBe("no-store");
+    const html = await response.text();
+    expect(html).toContain(en.auth.login);
+    expect(html).not.toContain('data-slot="sidebar-wrapper"');
+  }
   for (const endpoint of [
     "/api/projects",
     "/%61pi/projects",
@@ -80,9 +87,8 @@ for (const [lang, t] of [
     request,
   }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto(`/?lang=${lang}`);
+    await page.goto(`/account?lang=${lang}`);
     await hydrated(page);
-    await page.getByText(t.credentials.title, { exact: true }).last().click();
     const add = page.getByRole("region", {
       name: t.credentials.add,
       exact: true,

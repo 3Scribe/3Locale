@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { InstanceStatus } from "../application/instance";
 import { Button } from "./ui/button";
 import { api } from "./ImportPanel";
+import { dashboardHref } from "../lib/navigation";
 export function InstancePanel() {
   const { t, i18n } = useTranslation();
   const [status, setStatus] = useState<InstanceStatus>();
@@ -41,7 +42,10 @@ export function InstancePanel() {
             : t(`setup.storage.${status.storage}`)}
       </p>
       <p className="text-sm">{t("setup.security")}</p>
-      <a href="#provider-credentials" className="underline">
+      <a
+        href={`${dashboardHref("account", i18n.language)}#provider-credentials`}
+        className="underline"
+      >
         {t("credentials.title")}
       </a>
       {failed || status?.storage === "unavailable" ? (

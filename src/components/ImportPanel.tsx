@@ -31,7 +31,7 @@ export function ImportSummary({
 }) {
   const { t } = useTranslation();
   return (
-    <dl className="grid gap-2 sm:grid-cols-2">
+    <dl className="grid gap-2 @xl:grid-cols-2">
       {Object.entries(summary).map(([key, value]) => (
         <div key={key} className="flex justify-between gap-4">
           <dt>{t(`batch.counts.${key}`)}</dt>
@@ -117,7 +117,7 @@ export function ImportPanel({
       <p>{t("batch.hint")}</p>
       <fieldset disabled={busy || disabled} className="space-y-4">
         {!project && (
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 @xl:grid-cols-2">
             <label>
               {t("batch.projectName")}
               <Input

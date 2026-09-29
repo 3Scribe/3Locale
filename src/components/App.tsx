@@ -1,6 +1,3 @@
-import { InstancePanel } from "./InstancePanel";
-import { OwnerSession } from "./OwnerAccess";
-import { CredentialPanel } from "./CredentialPanel";
 import { ProjectSettings, DraftExport } from "./ProjectSettings";
 import { MachinePanel } from "./MachinePanel";
 import type { ImportPreview, ConflictPolicy } from "../application/imports";
@@ -36,15 +33,21 @@ async function request<T>(url: string, body?: unknown): Promise<T> {
   if (!response.ok) throw new Error(result.error ?? "unexpected");
   return result as T;
 }
-export default function App({ language }: { language: string }) {
+export default function App({
+  language,
+  mode = "projects",
+}: {
+  language: string;
+  mode?: "projects" | "keys";
+}) {
   const [i18n] = useState(() => createI18n(language));
   return (
     <I18nextProvider i18n={i18n}>
-      <Workspace />
+      <Workspace mode={mode} />
     </I18nextProvider>
   );
 }
-function Workspace() {
+function Workspace({ mode }: { mode: "projects" | "keys" }) {
   const { t, i18n } = useTranslation();
   const [projects, setProjects] = useState<Project[]>([]);
   const [project, setProject] = useState<ProjectDetail>();
@@ -138,27 +141,7 @@ function Workspace() {
       (language) => language !== project.baseLanguage,
     ) ?? [];
   return (
-    <main className="mx-auto max-w-6xl px-5 py-8 sm:px-10">
-      <header className="mb-12 flex flex-wrap items-center justify-between gap-4 border-b border-input pb-6">
-        <a
-          href={i18n.language === "ar" ? "/?lang=ar" : "/"}
-          className="text-2xl font-bold tracking-tight"
-        >
-          {t("appName")}
-        </a>
-        <label className="flex items-center gap-3 text-sm">
-          {t("uiLanguage")}
-          <select
-            value={i18n.language}
-            onChange={(event) => {
-              window.location.href = `/?lang=${event.target.value}`;
-            }}
-          >
-            <option value="en">{t("english")}</option>
-            <option value="ar">{t("arabic")}</option>
-          </select>
-        </label>
-      </header>
+    <div className="@container">
       <div
         role="alert"
         className={
@@ -169,12 +152,9 @@ function Workspace() {
       >
         {error ? t(`errors.${error}`) : ""}
       </div>
-      <p role="status" className="mb-4 text-sm text-primary">
+      <p role="status" className="mb-4 text-sm text-primary-text">
         {busy ? t("working") : notice ? t(notice) : ""}
       </p>
-      <OwnerSession />
-      <InstancePanel />
-      <CredentialPanel />
       {error === "stalePreview" && project && (
         <Button
           variant="outline"
@@ -199,56 +179,70 @@ function Workspace() {
       )}
       {!project ? (
         <>
-          <ImportPanel disabled={busy} onApplied={imported} />
+          {mode === "projects" && (
+            <ImportPanel disabled={busy} onApplied={imported} />
+          )}
           <h1 className="text-4xl font-semibold tracking-tight">
-            {t("title")}
+            {t(mode === "keys" ? "navigation.keys" : "title")}
           </h1>
-          <p className="mt-3 text-muted-foreground">{t("subtitle")}</p>
-          <div className="mt-10 grid gap-8 md:grid-cols-[1fr_1.2fr]">
-            <section className="rounded-xl border border-input bg-white p-6">
-              <h2 className="mb-6 text-xl font-semibold">{t("newProject")}</h2>
-              <form onSubmit={create} className="space-y-5">
-                <fieldset disabled={busy} className="space-y-5">
-                  <label className="block space-y-2">
-                    <span>{t("name")}</span>
-                    <Input
-                      name="name"
-                      required
-                      maxLength={120}
-                      autoComplete="off"
-                    />
-                  </label>
-                  <label className="block space-y-2">
-                    <span>{t("baseLanguage")}</span>
-                    <Input
-                      name="baseLanguage"
-                      required
-                      defaultValue="en"
-                      maxLength={35}
-                      aria-describedby="language-hint"
-                      dir="ltr"
-                    />
-                  </label>
-                  <label className="block space-y-2">
-                    <span>{t("targetLanguages")}</span>
-                    <Input
-                      name="targetLanguages"
-                      required
-                      maxLength={3600}
-                      aria-describedby="language-hint"
-                      dir="ltr"
-                    />
-                  </label>
-                  <p
-                    id="language-hint"
-                    className="text-sm text-muted-foreground"
-                  >
-                    {t("languageHint")}
-                  </p>
-                  <Button type="submit">{t("newProject")}</Button>
-                </fieldset>
-              </form>
-            </section>
+          <p className="mt-3 text-muted-foreground">
+            {t(mode === "keys" ? "navigation.chooseProject" : "subtitle")}
+          </p>
+          <div
+            className={
+              mode === "projects"
+                ? "mt-10 grid gap-8 @3xl:grid-cols-[1fr_1.2fr]"
+                : "mt-10"
+            }
+          >
+            {mode === "projects" && (
+              <section className="rounded-xl border border-input bg-white p-6">
+                <h2 className="mb-6 text-xl font-semibold">
+                  {t("newProject")}
+                </h2>
+                <form onSubmit={create} className="space-y-5">
+                  <fieldset disabled={busy} className="space-y-5">
+                    <label className="block space-y-2">
+                      <span>{t("name")}</span>
+                      <Input
+                        name="name"
+                        required
+                        maxLength={120}
+                        autoComplete="off"
+                      />
+                    </label>
+                    <label className="block space-y-2">
+                      <span>{t("baseLanguage")}</span>
+                      <Input
+                        name="baseLanguage"
+                        required
+                        defaultValue="en"
+                        maxLength={35}
+                        aria-describedby="language-hint"
+                        dir="ltr"
+                      />
+                    </label>
+                    <label className="block space-y-2">
+                      <span>{t("targetLanguages")}</span>
+                      <Input
+                        name="targetLanguages"
+                        required
+                        maxLength={3600}
+                        aria-describedby="language-hint"
+                        dir="ltr"
+                      />
+                    </label>
+                    <p
+                      id="language-hint"
+                      className="text-sm text-muted-foreground"
+                    >
+                      {t("languageHint")}
+                    </p>
+                    <Button type="submit">{t("newProject")}</Button>
+                  </fieldset>
+                </form>
+              </section>
+            )}
             <section>
               <h2 className="mb-5 text-xl font-semibold">{t("projects")}</h2>
               {!projects.length && (
@@ -598,7 +592,7 @@ function Workspace() {
           </div>
         </>
       )}
-    </main>
+    </div>
   );
 }
 function Editor({
@@ -655,7 +649,7 @@ function Editor({
           })}
         </p>
       )}
-      <div className="grid gap-5 md:grid-cols-2">
+      <div className="grid gap-5 @3xl:grid-cols-2">
         <div className="min-w-0">
           <p className="mb-2 text-sm font-medium">{t("baseText")}</p>
           <p

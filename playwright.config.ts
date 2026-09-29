@@ -9,6 +9,7 @@ export default defineConfig({
     url: "http://localhost:4322",
     reuseExistingServer: false,
     env: {
+      THREELOCALE_BROWSER_TEST: "1",
       THREELOCALE_DATABASE_PATH: `data/e2e-${randomUUID()}.db`,
       THREELOCALE_ORIGIN: "http://localhost:4322",
       THREELOCALE_CREDENTIAL_ENCRYPTION_KEY: randomBytes(32).toString("base64"),

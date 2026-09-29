@@ -249,7 +249,7 @@
   },
   "auth": {
     "setup": "Set up the owner",
-    "login": "Owner sign in",
+    "login": "Sign in to your site",
     "setupHint": "Create the single owner of this installation with a passkey. Existing projects will become available after setup.",
     "loginHint": "Use your registered passkey to open this installation.",
     "retention": "Keep your passkey available through your device or passkey manager. Email and password recovery are not available.",
@@ -276,5 +276,17 @@
     "deleteHint": "This permanently removes this saved secret. If it is the default, automatic translation stops until you choose another. Other credentials and projects remain unchanged.",
     "confirmDelete": "Confirm deletion of {{name}}"
   },
-  "switchLanguage": "العربية"
+  "switchLanguage": "العربية",
+  "navigation": {
+    "account": "Account",
+    "chooseProject": "Select a project to manage its translation keys.",
+    "keys": "Translation keys",
+    "mobileDescription": "Navigate between projects, translation keys, settings and your account.",
+    "title": "Main navigation",
+    "settings": "Settings",
+    "close": "Close navigation",
+    "skip": "Skip to main content",
+    "toggle": "Toggle navigation",
+    "projects": "Projects"
+  }
 }

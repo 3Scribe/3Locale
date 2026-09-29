@@ -228,7 +228,7 @@ test("explicit setup check verifies the test provider without translating", asyn
 }) => {
   const status = await (await request.get("/api/instance")).json();
   expect(status.provider.state).toBe("unverified");
-  await page.goto("/");
+  await page.goto("/settings");
   await page
     .getByText("Provider setup and connection check", { exact: true })
     .click();

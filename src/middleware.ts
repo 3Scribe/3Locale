@@ -4,6 +4,7 @@ import { authorizeOwner } from "./application/authentication";
 import { AppError } from "./domain/model";
 import { handle } from "./server/http";
 import { sessionCookie } from "./server/security";
+import { isDashboardPath } from "./lib/navigation";
 
 export const onRequest = defineMiddleware(async (context, next) => {
   let protectedResource = false;
@@ -14,7 +15,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
     } catch {
       throw new AppError("invalidRequest");
     }
-    protectedResource = path === "/" || path.startsWith("/api/");
+    const page = path === "/" || isDashboardPath(path);
+    protectedResource = page || path.startsWith("/api/");
     if (protectedResource) {
       const { auth, origin } = security();
       if (context.url.origin !== origin)
@@ -29,7 +31,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
       const token = context.cookies.get(sessionCookie)?.value;
       if (path.startsWith("/api/") && path !== "/api/auth")
         authorizeOwner(await auth.identity(token));
-      if (path === "/") context.locals.auth = await auth.status(token);
+      if (page) context.locals.auth = await auth.status(token);
     }
     return next();
   });

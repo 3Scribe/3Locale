@@ -5,7 +5,11 @@ import { api } from "./ImportPanel";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 type Listing = { encryptionReady: boolean; credentials: CredentialMetadata[] };
-export function CredentialPanel() {
+export function CredentialPanel({
+  defaultOpen = false,
+}: {
+  defaultOpen?: boolean;
+}) {
   const { t } = useTranslation();
   const [listing, setListing] = useState<Listing>(),
     [error, setError] = useState(""),
@@ -34,6 +38,7 @@ export function CredentialPanel() {
   }
   return (
     <details
+      open={defaultOpen}
       id="provider-credentials"
       className="mb-6 rounded-xl border border-input p-5 wrap-anywhere"
     >
