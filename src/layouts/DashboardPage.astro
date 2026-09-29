@@ -1,12 +1,15 @@
 ---
+import Dashboard from "../components/Dashboard";
 import OwnerAccess from "../components/OwnerAccess";
 import { createI18n } from "../i18n";
-import { dashboardHref } from "../lib/navigation";
+import type { DashboardPage } from "../lib/navigation";
 import "../styles/global.css";
+interface Props {
+  page: DashboardPage;
+}
+const { page } = Astro.props;
 const language = Astro.url.searchParams.get("lang") === "ar" ? "ar" : "en";
 const i18n = createI18n(language);
-if (Astro.locals.auth.authenticated)
-  return Astro.redirect(dashboardHref("projects", language));
 ---
 
 <!doctype html>
@@ -15,14 +18,23 @@ if (Astro.locals.auth.authenticated)
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
-    <title>{i18n.t('appName')}</title>
+    <title>{i18n.t(`navigation.${page}`)} · {i18n.t("appName")}</title>
     <meta name="description" content={i18n.t("subtitle")} />
   </head>
   <body class:list={{ "bg-white": !Astro.locals.auth.authenticated }}>
-    <OwnerAccess
-      language={language}
-      setup={Astro.locals.auth.setup}
-      client:load
-    />
+    {Astro.locals.auth.authenticated ? (
+      <Dashboard
+        language={language}
+        page={page}
+        sidebarOpen={Astro.cookies.get("sidebar_state")?.value !== "false"}
+        client:load
+      />
+    ) : (
+      <OwnerAccess
+        language={language}
+        setup={Astro.locals.auth.setup}
+        client:load
+      />
+    )}
   </body>
 </html>

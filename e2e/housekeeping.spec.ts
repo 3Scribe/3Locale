@@ -33,7 +33,7 @@ for (const [locale, t] of [
         },
       })
     ).json();
-    await page.goto(`/?lang=${locale}`);
+    await page.goto(`/settings?lang=${locale}`);
     await expect(
       page.getByText(t.setup.storage.available, { exact: true }),
     ).toBeVisible();
@@ -50,6 +50,7 @@ for (const [locale, t] of [
       page.getByRole("button", { name: t.setup.check, exact: true }),
     ).toBeDisabled();
     await expect(page.getByText(t.setup.node, { exact: true })).toBeVisible();
+    await page.goto(`/projects?lang=${locale}`);
     await page
       .getByRole("button", {
         name: t.openProject.replace("{{name}}", project.name),

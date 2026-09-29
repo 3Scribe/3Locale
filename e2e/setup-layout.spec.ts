@@ -23,26 +23,22 @@ for (const [locale, t] of [
           json: { encryptionReady: false, credentials: [] },
         }),
       );
-      await page.goto(`/?lang=${locale}`);
-      await hydrated(page);
-      await page.getByText(t.setup.instructions, { exact: true }).click();
-      await page.locator("#provider-credentials > summary").click();
-      await expect(
-        page.getByText(t.setup[runtime], { exact: true }),
-      ).toBeVisible();
-      await expect(
-        page.getByText(t.errors.encryptionConfiguration, { exact: true }),
-      ).toBeVisible();
+      for (const [route, text] of [
+        ["settings", t.setup[runtime]],
+        ["account", t.errors.encryptionConfiguration],
+      ]) {
+        await page.goto(`/${route}?lang=${locale}`);
+        await hydrated(page);
+        if (route === "settings")
+          await page.getByText(t.setup.instructions, { exact: true }).click();
+        await expect(page.getByText(text, { exact: true })).toBeVisible();
+        await page.evaluate(() => document.fonts.ready.then(() => undefined));
 
-      // System font metrics differ between Windows and Linux CI; both must fit.
-      for (const font of ["", "Arial, sans-serif"]) {
-        await page.evaluate((font) => {
-          document.documentElement.style.fontFamily = font;
-        }, font);
-        for (const text of [
-          t.setup[runtime],
-          t.errors.encryptionConfiguration,
-        ]) {
+        // System font metrics differ between Windows and Linux CI; both must fit.
+        for (const font of ["", "Arial, sans-serif"]) {
+          await page.evaluate((font) => {
+            document.documentElement.style.fontFamily = font;
+          }, font);
           const overflowingLines = await page
             .getByText(text, { exact: true })
             .evaluate((element) => {
@@ -62,11 +58,11 @@ for (const [locale, t] of [
                 }));
             });
           expect(overflowingLines).toEqual([]);
+          expect(
+            await page.evaluate(
+              () => document.documentElement.scrollWidth <= window.innerWidth,
+            ),
+          ).toBe(true);
         }
-        expect(
-          await page.evaluate(
-            () => document.documentElement.scrollWidth <= window.innerWidth,
-          ),
-        ).toBe(true);
       }
     });
